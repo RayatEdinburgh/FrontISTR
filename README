@@ -12,7 +12,7 @@
 ================================================================================
 
 (1) Programs in this archive
-  - FrontISTR structual analysis program
+  - FrontISTR structural analysis program
 
 (2) Files in this directory
   README                      : README (in English : this file)
@@ -30,10 +30,8 @@
                               : installation manual for FrontISTR
   doc/FrontISTR_tutorial_guide_en.pdf
                               : tutorial guide for FrontISTR
-  doc/FrontISTR_user_manual_Ver37_en.pdf
-                              : user's manual for FrontISTR Ver.3.7
-  doc/FrontISTR_user_manual_Ver45_en.pdf
-                              : user's manual for FrontISTR Ver.4.5
+  doc/FrontISTR_user_manual_Ver38_en.pdf
+                              : user's manual for FrontISTR Ver.3.8
 
   tutorial/                   : tutorial data
 
@@ -41,13 +39,9 @@
 
   fistr/                      : starter program
 
-  fisrt1/                     : FrontISTR Ver.3.7
+  fisrt1/                     : FrontISTR
 
-  fistr2/                     : FrontISTR Ver.4.5
-
-  hecmw1/                     : HEC-MW Ver.3.7
-
-  hecmw2/                     : HEC-MW Ver.4.5
+  hecmw1/                     : HEC-MW
 
   etc/                        : various setting files
 
