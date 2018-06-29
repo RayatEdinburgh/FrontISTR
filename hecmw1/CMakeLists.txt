@@ -24,10 +24,12 @@ set(hecmw_LIBRARIES ${FrontISTR_LIBRARIES})
 #
 include(src/CMakeLists.txt)
 
-add_library(hecmw STATIC ${hecmw_SOURCES} ${hecmw_C_SOURCES})
-target_link_libraries(hecmw ${hecmw_LIBRARIES})
-target_include_directories(hecmw PUBLIC ${hecmw_INCLUDE_DIRS})
-target_compile_definitions(hecmw PUBLIC ${hecmw_DEFINITIONS})
+add_library(libhecmw STATIC ${hecmw_SOURCES} ${hecmw_C_SOURCES})
+target_link_libraries(libhecmw ${hecmw_LIBRARIES})
+SET_TARGET_PROPERTIES(libhecmw PROPERTIES
+                       PREFIX "")
+target_include_directories(libhecmw PUBLIC ${hecmw_INCLUDE_DIRS})
+target_compile_definitions(libhecmw PUBLIC ${hecmw_DEFINITIONS})
 
 #
 # Build tools
