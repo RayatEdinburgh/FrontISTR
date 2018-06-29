@@ -4,11 +4,14 @@
 ###############################################################################
 cmake_minimum_required(VERSION 2.8.11)
 
-list(APPEND hecmw_SOURCES
+list(APPEND hecmw_C_SOURCES
   ${CMAKE_CURRENT_LIST_DIR}/matrix2graph.c
   ${CMAKE_CURRENT_LIST_DIR}/matrix_repart.c
   ${CMAKE_CURRENT_LIST_DIR}/mem_util.c
   ${CMAKE_CURRENT_LIST_DIR}/separator_c2f_c.c
+)
+  
+list(APPEND hecmw_SOURCES
   ${CMAKE_CURRENT_LIST_DIR}/m_irjc_matrix.f90
   ${CMAKE_CURRENT_LIST_DIR}/m_crs_matrix.f90
   ${CMAKE_CURRENT_LIST_DIR}/m_child_matrix.f90

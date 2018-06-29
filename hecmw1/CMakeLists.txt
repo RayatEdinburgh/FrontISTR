@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(hecmw C CXX Fortran)
 
 set(hecmw_SOURCES)
+set(hecmw_C_SOURCES)
 set(hecmw_INCLUDE_DIRS)
 set(hecmw_DEFINITIONS)
 set(hecmw_LIBRARIES)
@@ -23,7 +24,7 @@ set(hecmw_LIBRARIES ${FrontISTR_LIBRARIES})
 #
 include(src/CMakeLists.txt)
 
-add_library(hecmw STATIC ${hecmw_SOURCES})
+add_library(hecmw STATIC ${hecmw_SOURCES} ${hecmw_C_SOURCES})
 target_link_libraries(hecmw ${hecmw_LIBRARIES})
 target_include_directories(hecmw PUBLIC ${hecmw_INCLUDE_DIRS})
 target_compile_definitions(hecmw PUBLIC ${hecmw_DEFINITIONS})
