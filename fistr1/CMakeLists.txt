@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(fistr CXX Fortran C)
 
 set(fistr_SOURCES)
+set(fistr_C_SOURCES)
 set(fistr_INCLUDE_DIRS)
 set(fistr_DEFINITIONS)
 set(fistr_LIBRARIES)
@@ -22,14 +23,21 @@ set(fistr_LIBRARIES ${FrontISTR_LIBRARIES})
 # Build for libfistr.a
 #
 include(src/CMakeLists.txt)
-add_library(fistr STATIC ${fistr_SOURCES})
-target_link_libraries(fistr libhecmw)
-target_include_directories(fistr PUBLIC
-  ${fistr_INCLUDE_DIRS} ${hecmw_INCLUDE_DIRS}
-)
-target_compile_definitions(fistr PUBLIC
-  ${fistr_DEFINITIONS} ${hecmw_DEFINITIONS}
-)
+
+#ADD_LIBRARY(fistr_cobj OBJECT ${fistr_C_SOURCES})
+#ADD_LIBRARY(fistr_fobj OBJECT ${fistr_SOURCES})
+#target_include_directories(fistr_cobj PUBLIC ${fistr_INCLUDE_DIRS} ${hecmw_INCLUDE_DIRS})
+#target_compile_definitions(fistr_cobj PUBLIC ${fistr_DEFINITIONS})
+#target_include_directories(fistr_fobj PUBLIC ${fistr_INCLUDE_DIRS} ${hecmw_INCLUDE_DIRS})
+#target_compile_definitions(fistr_fobj PUBLIC ${fistr_DEFINITIONS})
+
+add_library(libfistr STATIC ${fistr_SOURCES} ${fistr_C_SOURCES})
+target_link_libraries(libfistr libhecmw)
+SET_TARGET_PROPERTIES(libfistr PROPERTIES
+                       PREFIX ""
+					   LINKER_LANGUAGE C)
+target_include_directories(libfistr PUBLIC ${fistr_INCLUDE_DIRS} )
+target_compile_definitions(libfistr PUBLIC ${fistr_DEFINITIONS} )
 
 #
 # Build for fistr1 (executable)
@@ -37,7 +45,7 @@ target_compile_definitions(fistr PUBLIC
 include(src/main/CMakeLists.txt)
 add_executable(fistr1 ${fistr1_SOURCES})
 target_link_libraries(fistr1
-  fistr libhecmw ${hecmw_LIBRARIES} ${fistr_LIBRARIES}
+  libfistr libhecmw ${hecmw_LIBRARIES} ${fistr_LIBRARIES}
   ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}
 )
 
