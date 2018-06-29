@@ -139,6 +139,7 @@ find_package(Parmetis)
 find_package(Refiner)
 find_package(Revocap)
 find_package(Scalapack)
+find_package(lapack)
 find_package(Trilinos)
 find_package(Doxygen)
 option(WITH_TOOLS "compile tools" ON)
@@ -162,6 +163,7 @@ feature_summary(WHAT ALL)
 ###################
 # -DWITH_MPI
 ###################
+set(WITH_MPI OFF)
 if(WITH_MPI AND MPI_Fortran_FOUND AND MPI_CXX_FOUND AND MPI_C_FOUND)
   list(APPEND FrontISTR_INCLUDE_DIRS
     ${MPI_C_INCLUDE_PATH}
@@ -216,17 +218,19 @@ endif()
 ###################
 # -DWITH_ML
 ###################
+set(WITH_ML OFF)
 if(WITH_ML)
   if(Trilinos_FOUND)
     list(APPEND FrontISTR_INCLUDE_DIRS ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
     list(APPEND FrontISTR_DEFINITIONS "HECMW_WITH_ML")
     list(APPEND FrontISTR_LIBRARIES ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+	mark_as_advanced(Trilinos_DIR)
   else()
     message(WARNING "Trilinos not found")
     set(WITH_ML OFF)
   endif()
 endif()
-mark_as_advanced(Trilinos_DIR)
+set(WITH_ML OFF)
 
 ###################
 # -DWITH_PARMETIS
@@ -243,11 +247,15 @@ endif()
 # -DWITH_MUMPS
 ###################
 if(WITH_MUMPS)
-  if(MUMPS_FOUND AND ( (SCALAPACK_FOUND AND LAPACK_FOUND) OR SCALAPACK_MKL ) )
+  if(MUMPS_FOUND AND LAPACK_FOUND )
     list(APPEND FrontISTR_DEFINITIONS "HECMW_WITH_MUMPS")
     list(APPEND FrontISTR_INCLUDE_DIRS ${MUMPS_INCLUDE_PATH})
-    list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES})
-    mark_as_advanced(scalapack_DIR)
+	if( WITH_MPI AND ( SCALAPACK_FOUND OR SCALAPACK_MKL ) )
+      list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES})
+      mark_as_advanced(scalapack_DIR)
+    else()
+	  list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${LAPACK_LIBRARIES})
+    endif()
   else()
     message(FATAL_ERROR "MUMPS could not enable. Please also install scalapack and lapack.")
     set(WITH_MUMPS OFF)
@@ -255,6 +263,7 @@ if(WITH_MUMPS)
 else()
   set(WITH_MUMPS OFF)
 endif()
+set(WITH_MUMPS OFF)
 
 ###################
 # -DWITH_METIS

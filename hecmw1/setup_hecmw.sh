@@ -67,7 +67,6 @@ LIBSRCDIRS="\
 	src/operations \
 	src/operations/adaptation \
 	src/operations/dynamic_load_balancing \
-	src/operations/jacobian \
 	src/couple \
 	src/solver \
 	src/solver/matrix \
@@ -89,8 +88,7 @@ LIBSRCDIRS="\
 	src/solver/communication \
 	src/solver/init \
 	src/visualizer \
-	src/hecmw \
-	src/etc"
+	src/hecmw"
 
 TOOLSDIRS="\
 	tools \
