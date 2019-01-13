@@ -79,9 +79,12 @@ contains
     real(kind=kreal) :: rhs, lambda
 
     ndof = hecMESH%n_dof
-    do ig0=1,hecMESH%mpc%n_mpc
+    OUTER: do ig0=1,hecMESH%mpc%n_mpc
       iS0= hecMESH%mpc%mpc_index(ig0-1)+1
       iE0= hecMESH%mpc%mpc_index(ig0)
+      do ik= iS0, iE0
+        if (hecMESH%mpc%mpc_dof(ik) > ndof) cycle OUTER
+      enddo
       ! Suppose the lagrange multiplier= first dof of first node
       in = hecMESH%mpc%mpc_item(iS0)
       idof = hecMESH%mpc%mpc_dof(iS0)
@@ -94,7 +97,7 @@ contains
         rhs = hecMESH%mpc%mpc_val(ik)
         B(ndof*(in-1)+idof) = B(ndof*(in-1)+idof) - rhs*lambda
       enddo
-    enddo
+    enddo OUTER
   end subroutine fstr_Update_NDForce_MPC
 
   subroutine fstr_Update_NDForce_SPC( cstep, hecMESH, fstrSOLID, B )
@@ -109,6 +112,8 @@ contains
     real(kind=kreal) :: rhs
 
     ndof = hecMESH%n_dof
+    fstrSOLID%REACTION = 0.d0
+
     do ig0= 1, fstrSOLID%BOUNDARY_ngrp_tot
       grpid = fstrSOLID%BOUNDARY_ngrp_GRPID(ig0)
       if( .not. fstr_isBoundaryActive( fstrSOLID, grpid, cstep ) ) cycle
@@ -127,6 +132,8 @@ contains
         end if
         do idof=idof1,idof2
           B( ndof*(in-1) + idof ) = 0.d0
+          !for output reaction force
+          fstrSOLID%REACTION(ndof*(in-1)+idof) = fstrSOLID%QFORCE(ndof*(in-1)+idof)
         enddo
       enddo
     enddo

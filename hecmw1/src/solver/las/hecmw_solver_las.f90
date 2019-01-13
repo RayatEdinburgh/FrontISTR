@@ -16,7 +16,6 @@ module hecmw_solver_las
 
   private
 
-  public :: hecmw_matvec_set_mpcmatvec_flg
   public :: hecmw_matvec
   public :: hecmw_matvec_set_async
   public :: hecmw_matvec_unset_async
@@ -25,29 +24,17 @@ module hecmw_solver_las
   public :: hecmw_Tvec
   public :: hecmw_Ttvec
   public :: hecmw_TtmatTvec
-  public :: hecmw_mpc_scale
-  public :: hecmw_trans_b
-  public :: hecmw_tback_x
   public :: hecmw_matvec_clear_timer
   public :: hecmw_matvec_get_timer
   public :: hecmw_mat_diag_sr
+  public :: hecmw_mat_add
+  public :: hecmw_mat_multiple
 
   real(kind=kreal), save :: time_Ax = 0.d0
   logical, save :: mpcmatvec_flg = .false.
   logical, save :: async_matvec_flg = .false.
 
 contains
-
-  !C
-  !C***
-  !C*** hecmw_matvec_set_mpcmatvec_flg
-  !C***
-  !C
-  subroutine hecmw_matvec_set_mpcmatvec_flg (flg)
-    implicit none
-    logical, intent(in) :: flg
-    mpcmatvec_flg = flg
-  end subroutine hecmw_matvec_set_mpcmatvec_flg
 
   !C
   !C***
@@ -162,22 +149,23 @@ contains
   !C*** hecmw_Tvec
   !C***
   !C
-  subroutine hecmw_Tvec (hecMESH, X, Y, COMMtime)
+  subroutine hecmw_Tvec (hecMESH, ndof, X, Y, COMMtime)
     use hecmw_util
     use hecmw_solver_las_33
     use hecmw_solver_las_nn
 
     implicit none
     type (hecmwST_local_mesh), intent(in) :: hecMESH
+    integer(kind=kint), intent(in) :: ndof
     real(kind=kreal), intent(in) :: X(:)
     real(kind=kreal), intent(out) :: Y(:)
     real(kind=kreal), intent(inout) :: COMMtime
 
-    select case(hecMESH%n_dof)
+    select case(ndof)
       case (3)
         call hecmw_Tvec_33(hecMESH, X, Y, COMMtime)
       case default
-        call hecmw_Tvec_nn(hecMESH, X, Y, COMMtime)
+        call hecmw_Tvec_nn(hecMESH, ndof, X, Y, COMMtime)
     end select
 
   end subroutine hecmw_Tvec
@@ -187,21 +175,22 @@ contains
   !C*** hecmw_Ttvec
   !C***
   !C
-  subroutine hecmw_Ttvec (hecMESH, X, Y, COMMtime)
+  subroutine hecmw_Ttvec (hecMESH, ndof, X, Y, COMMtime)
     use hecmw_util
     use hecmw_solver_las_33
     use hecmw_solver_las_nn
     implicit none
     type (hecmwST_local_mesh), intent(in) :: hecMESH
+    integer(kind=kint), intent(in) :: ndof
     real(kind=kreal), intent(in) :: X(:)
     real(kind=kreal), intent(out) :: Y(:)
     real(kind=kreal), intent(inout) :: COMMtime
 
-    select case(hecMESH%n_dof)
+    select case(ndof)
       case (3)
         call hecmw_Ttvec_33(hecMESH, X, Y, COMMtime)
       case default
-        call hecmw_Ttvec_nn(hecMESH, X, Y, COMMtime)
+        call hecmw_Ttvec_nn(hecMESH, ndof, X, Y, COMMtime)
     end select
 
   end subroutine hecmw_Ttvec
@@ -231,84 +220,6 @@ contains
     end select
 
   end subroutine hecmw_TtmatTvec
-
-  !C
-  !C***
-  !C*** hecmw_mpc_scale
-  !C***
-  !C
-  subroutine hecmw_mpc_scale(hecMESH)
-    use hecmw_util
-    implicit none
-    type (hecmwST_local_mesh), intent(inout) :: hecMESH
-    integer(kind=kint) :: i, j, k
-    real(kind=kreal) :: WVAL
-
-    !$omp parallel default(none),private(i,j,k,WVAL),shared(hecMESH)
-    !$omp do
-    do i = 1, hecMESH%mpc%n_mpc
-      k = hecMESH%mpc%mpc_index(i-1)+1
-      WVAL = 1.d0 / hecMESH%mpc%mpc_val(k)
-      hecMESH%mpc%mpc_val(k) = 1.d0
-      do j = hecMESH%mpc%mpc_index(i-1)+2, hecMESH%mpc%mpc_index(i)
-        hecMESH%mpc%mpc_val(j) = hecMESH%mpc%mpc_val(j) * WVAL
-      enddo
-      hecMESH%mpc%mpc_const(i) = hecMESH%mpc%mpc_const(i) * WVAL
-    enddo
-    !$omp end do
-    !$omp end parallel
-
-  end subroutine hecmw_mpc_scale
-
-  !C
-  !C***
-  !C*** hecmw_trans_b
-  !C***
-  !C
-  subroutine hecmw_trans_b(hecMESH, hecMAT, B, BT, COMMtime)
-    use hecmw_util
-    use hecmw_solver_las_33
-    use hecmw_solver_las_nn
-
-    implicit none
-    type (hecmwST_local_mesh), intent(in) :: hecMESH
-    type (hecmwST_matrix), intent(in)     :: hecMAT
-    real(kind=kreal), intent(in) :: B(:)
-    real(kind=kreal), intent(out), target :: BT(:)
-    real(kind=kreal), intent(inout) :: COMMtime
-
-    select case(hecMESH%n_dof)
-      case (3)
-        call hecmw_trans_b_33(hecMESH, hecMAT, B, BT, COMMtime)
-      case default
-        call hecmw_trans_b_nn(hecMESH, hecMAT, B, BT, COMMtime)
-    end select
-
-  end subroutine hecmw_trans_b
-
-  !C
-  !C***
-  !C*** hecmw_tback_x
-  !C***
-  !C
-  subroutine hecmw_tback_x(hecMESH, X, COMMtime)
-    use hecmw_util
-    use hecmw_solver_las_33
-    use hecmw_solver_las_nn
-
-    implicit none
-    type (hecmwST_local_mesh), intent(in) :: hecMESH
-    real(kind=kreal), intent(inout) :: X(:)
-    real(kind=kreal) :: COMMtime
-
-    select case(hecMESH%n_dof)
-      case (3)
-        call hecmw_tback_x_33(hecMESH, X, COMMtime)
-      case default
-        call hecmw_tback_x_nn(hecMESH, X, COMMtime)
-    end select
-
-  end subroutine hecmw_tback_x
 
   !C
   !C***
@@ -354,4 +265,24 @@ contains
 
   end subroutine hecmw_mat_diag_sr
 
+  subroutine hecmw_mat_add(hecMAT1, hecMAT2, hecMAT3)
+    use hecmw_util
+    use hecmw_solver_las_33
+    use hecmw_solver_las_nn
+    implicit none
+    type (hecmwST_matrix), intent(inout), target :: hecMAT1, hecMAT2, hecMAT3
+
+    call hecmw_mat_add_nn(hecMAT1, hecMAT2, hecMAT3)
+  end subroutine hecmw_mat_add
+
+  subroutine hecmw_mat_multiple(hecMAT, alpha)
+    use hecmw_util
+    use hecmw_solver_las_33
+    use hecmw_solver_las_nn
+    implicit none
+    type (hecmwST_matrix), intent(inout), target :: hecMAT
+    real(kind=kreal), intent(in) :: alpha
+
+    call hecmw_mat_multiple_nn(hecMAT, alpha)
+  end subroutine hecmw_mat_multiple
 end module hecmw_solver_las

@@ -111,6 +111,11 @@ module m_fstr
   integer(kind=kint), pointer :: NRRES     ! position of restart read
   integer(kind=kint), pointer :: NPRINT    ! interval of write
 
+  integer(kind=kint), parameter :: kOPSS_SOLUTION = 1
+  integer(kind=kint), parameter :: kOPSS_MATERIAL = 2
+  integer(kind=kint)            :: OPSSTYPE = kOPSS_SOLUTION ! output stress/strain type
+
+
   !> REFTEMP
   real(kind=kreal), pointer :: REF_TEMP
 
@@ -194,6 +199,8 @@ module m_fstr
     real(kind=kreal), pointer :: EPSTRAIN(:)   !< elemental principal strain
     real(kind=kreal), pointer :: EPSTRESS_VECT(:,:)   !< elemental principal stress vector
     real(kind=kreal), pointer :: EPSTRAIN_VECT(:,:)   !< elemental principal strain vector
+    real(kind=kreal), pointer :: ENQM(:)      !< elemental NQM
+
 
     type(fstr_solid_physic_val), pointer :: LAYER(:)    !< Laminated Shell's layer (1,2,3,4,5,...)
     type(fstr_solid_physic_val), pointer :: PLUS    !< for SHELL PLUS
@@ -305,6 +312,7 @@ module m_fstr
 
     real(kind=kreal), pointer :: YIELD_RATIO(:)    !< yield ratio
 
+    real(kind=kreal), pointer :: ENQM(:)      !< elemental NQM
     real(kind=kreal), pointer :: REACTION(:)    !< reaction_force
 
     real(kind=kreal), pointer :: CONT_NFORCE(:)  !< contact normal force for output
@@ -327,7 +335,7 @@ module m_fstr
     integer(kind=kint) :: is_33shell
     integer(kind=kint) :: is_33beam
     integer(kind=kint) :: is_heat
-    integer(kind=kint), pointer :: is_rot(:)
+    integer(kind=kint), pointer :: is_rot(:) => null()
     integer(kind=kint) :: elemopt361
     real(kind=kreal)   :: FACTOR     (2)      !< factor of incrementation
     !< 1:time t  2: time t+dt
@@ -399,16 +407,6 @@ module m_fstr
     real(kind=kreal), pointer :: TEMP0(:)
     real(kind=kreal), pointer :: TEMPC(:)
     real(kind=kreal), pointer :: TEMP (:)
-    real(kind=kreal), pointer :: TEMPW(:)
-
-    !> Residual
-    real(kind=kreal), pointer :: re(:)
-    real(kind=kreal), pointer :: QV(:)
-    real(kind=kreal), pointer :: RR(:)
-    real(kind=kreal), pointer :: RL(:)
-    real(kind=kreal), pointer :: RU(:)
-    real(kind=kreal), pointer :: RD(:)
-    real(kind=kreal), pointer :: IWKX(:,:)
 
     !> FIXTEMP
     integer :: T_FIX_tot
@@ -556,6 +554,7 @@ module m_fstr
     real   (kind=kreal), pointer :: mass(:)
     real   (kind=kreal), pointer :: effmass(:)
     real   (kind=kreal), pointer :: partfactor(:)
+    logical :: is_free = .false.
   end type fstr_eigen
 
   !> Data for coupling analysis
@@ -652,6 +651,7 @@ contains
     nullify( S%ESTRESS )
     nullify( S%ESTRAIN )
     nullify( S%EMISES )
+    nullify( S%ENQM )
     nullify( S%GL          )
     nullify( S%QFORCE      )
     nullify( S%VELOCITY_ngrp_ID )
@@ -696,14 +696,6 @@ contains
     nullify( H%TEMP0 )
     nullify( H%TEMPC )
     nullify( H%TEMP  )
-    nullify( H%TEMPW )
-    nullify( H%re )
-    nullify( H%QV )
-    nullify( H%RR )
-    nullify( H%RL )
-    nullify( H%RU )
-    nullify( H%RD )
-    nullify( H%IWKX )
     nullify( H%T_FIX_node )
     nullify( H%T_FIX_ampl )
     nullify( H%T_FIX_val )
@@ -787,7 +779,7 @@ contains
     hecMAT%Iarray(32)=    0    ! = dumpexit
     hecMAT%Iarray(33)=    0    ! = usejad
     hecMAT%Iarray(34)=   10    ! = ncolor_in
-    hecMAT%Iarray(13)=    3    ! = mpc_method
+    hecMAT%Iarray(13)=    0    ! = mpc_method
     hecMAT%Iarray(14)=    0    ! = estcond
     hecMAT%Iarray(35)=    3    ! = maxrecycle_precond
 
@@ -854,6 +846,12 @@ contains
       call hecmw_abort( hecmw_comm_get_comm() )
     endif
     call hecmw_cmat_init( hecMAT%cmat )
+    hecMAT%D  = 0.0d0
+    hecMAT%AL = 0.0d0
+    hecMAT%AU = 0.0d0
+    hecMAT%B  = 0.0d0
+    hecMAT%X  = 0.0d0
+    hecMAT%ALU = 0.0d0
   end subroutine hecMAT_init
 
   subroutine hecMAT_finalize( hecMAT )
@@ -1056,6 +1054,7 @@ contains
     phys%ESTRAIN = 0.0d0
     phys%ESTRESS = 0.0d0
     phys%EMISES  = 0.0d0
+    phys%ENQM    = 0.0d0
   end subroutine fstr_solid_phys_zero
 
   subroutine fstr_solid_phys_clear(fstrSOLID)

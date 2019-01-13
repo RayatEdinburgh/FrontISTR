@@ -17,6 +17,7 @@ module hecmw_matrix_contact
   public :: hecmw_cmat_n_newpair
   public :: hecmw_cmat_LU
   public :: hecmw_cmat_LU_free
+  public :: hecmw_cmat_substitute
 
   integer(kind=kint), parameter :: CMAT_MAX_VAL_INIT = 128
   integer(kind=kint), parameter :: CMAT_MAX_VAL_GROW = 2
@@ -68,7 +69,7 @@ contains
   subroutine cmat_resize( cmat, newlen )
     type(hecmwST_matrix_contact) :: cmat
     integer(kind=kint) :: newlen
-    type(hecmwST_index_value_pair), pointer :: temp(:)
+    type(hecmwST_index_value_pair), allocatable :: temp(:)
 
     integer(kind=kint) :: i
 
@@ -77,16 +78,18 @@ contains
     if( cmat%max_val > 0 ) then
       allocate( temp( cmat%n_val ) )
       do i = 1, cmat%n_val
-        temp(i) = cmat%pair(i)
+        temp(i)%i = cmat%pair(i)%i
+        temp(i)%j = cmat%pair(i)%j
+        temp(i)%val = cmat%pair(i)%val
       enddo
       deallocate( cmat%pair )
-    endif
 
-    allocate( cmat%pair( newlen ) )
+      allocate( cmat%pair( newlen ) )
 
-    if( cmat%max_val > 0 ) then
       do i = 1, cmat%n_val
-        cmat%pair(i) = temp(i)
+        cmat%pair(i)%i = temp(i)%i
+        cmat%pair(i)%j = temp(i)%j
+        cmat%pair(i)%val = temp(i)%val
       enddo
       deallocate( temp )
     endif
@@ -359,5 +362,18 @@ contains
     deallocate (hecMAT%indexCL, hecMAT%itemCL, hecMAT%CAL)
     deallocate (hecMAT%indexCU, hecMAT%itemCU, hecMAT%CAU)
   end subroutine hecmw_cmat_LU_free
+
+  subroutine hecmw_cmat_substitute( dest, src )
+    implicit none
+    type(hecmwST_matrix_contact) :: dest
+    type(hecmwST_matrix_contact) :: src
+    dest%n_val = src%n_val
+    dest%max_val = src%max_val
+    if (associated(src%pair)) dest%pair => src%pair
+    dest%checked = src%checked
+    dest%sorted = src%sorted
+    dest%max_row = src%max_row
+    dest%max_col = src%max_col
+  end subroutine hecmw_cmat_substitute
 
 end module hecmw_matrix_contact

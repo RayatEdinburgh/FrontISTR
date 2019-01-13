@@ -39,6 +39,7 @@ contains
     type (fstr_param)                     :: fstrPARAM !< type fstr_param
     type (fstrST_matrix_contact_lagrange) :: fstrMAT   !< type fstrST_matrix_contact_lagrange
 
+    type (hecmwST_matrix), pointer :: hecMATmpc
     integer(kind=kint) :: ndof
     integer(kind=kint) :: i, iter
     integer(kind=kint) :: stepcnt
@@ -46,6 +47,8 @@ contains
     real(kind=kreal)   :: tt0, tt, res, qnrm, rres, tincr, xnrm, dunrm, rxnrm
     real(kind=kreal), pointer :: coord(:), P(:)
     logical :: isLinear = .false.
+
+    call hecmw_mpc_mat_init(hecMESH, hecMAT, hecMATmpc)
 
     if(.not. fstrPR%nlgeom)then
       isLinear = .true.
@@ -75,19 +78,22 @@ contains
       call fstr_AddSPRING(cstep, hecMESH, hecMAT, fstrSOLID, fstrPARAM)
 
       ! ----- Set Boundary condition
-      call fstr_AddBC(cstep, hecMESH, hecMAT, fstrSOLID, fstrPARAM, fstrMAT, stepcnt)
+      call hecmw_mpc_mat_ass(hecMESH, hecMAT, hecMATmpc)
+      call hecmw_mpc_trans_rhs(hecMESH, hecMAT, hecMATmpc)
+      call fstr_AddBC(cstep, hecMESH, hecMATmpc, fstrSOLID, fstrPARAM, fstrMAT, stepcnt)
 
       !----- SOLVE [Kt]{du}={R}
-      if( sub_step == restrt_step_num .and. iter == 1 ) hecMAT%Iarray(98) = 1
+      if( sub_step == restrt_step_num .and. iter == 1 ) hecMATmpc%Iarray(98) = 1
       if( iter == 1 ) then
-        hecMAT%Iarray(97) = 2   !Force numerical factorization
+        hecMATmpc%Iarray(97) = 2   !Force numerical factorization
       else
-        hecMAT%Iarray(97) = 1   !Need numerical factorization
+        hecMATmpc%Iarray(97) = 1   !Need numerical factorization
       endif
-      hecMAT%X = 0.0d0
+      hecMATmpc%X = 0.0d0
       call fstr_set_current_config_to_mesh(hecMESH,fstrSOLID,coord)
-      call solve_LINEQ(hecMESH,hecMAT)
+      call solve_LINEQ(hecMESH,hecMATmpc)
       call fstr_recover_initial_config_to_mesh(hecMESH,fstrSOLID,coord)
+      call hecmw_mpc_tback_sol(hecMESH, hecMAT, hecMATmpc)
 
       ! ----- update the small displacement and the displacement for 1step
       !       \delta u^k => solver's solution
@@ -134,8 +140,8 @@ contains
         if( rxnrm < fstrSOLID%step_ctrl(cstep)%converg ) exit
       endif
 
-      ! ----- check divergence
-      if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. rres > fstrSOLID%step_ctrl(cstep)%maxres ) then
+      ! ----- check divergence and NaN
+      if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. rres > fstrSOLID%step_ctrl(cstep)%maxres .or. rres /= rres ) then
         if( hecMESH%my_rank == 0) then
           write(ILOG,'(a,i5,a,i5)') '### Fail to Converge  : at total_step=', cstep, '  sub_step=', sub_step
           write(   *,'(a,i5,a,i5)') '     ### Fail to Converge  : at total_step=', cstep, '  sub_step=', sub_step
@@ -144,7 +150,7 @@ contains
         fstrSOLID%NRstat_i(knstSUMIT) = fstrSOLID%NRstat_i(knstSUMIT) + iter    ! logging newton iteration(sumofiter)
         fstrSOLID%CutBack_stat = fstrSOLID%CutBack_stat + 1
         if( iter == fstrSOLID%step_ctrl(cstep)%max_iter ) fstrSOLID%NRstat_i(knstDRESN) = 1
-        if( rres > fstrSOLID%step_ctrl(cstep)%maxres    ) fstrSOLID%NRstat_i(knstDRESN) = 2
+        if( rres > fstrSOLID%step_ctrl(cstep)%maxres .or. rres /= rres ) fstrSOLID%NRstat_i(knstDRESN) = 2
         return
       end if
     enddo
@@ -164,6 +170,7 @@ contains
     fstrSOLID%CutBack_stat = 0
     deallocate(coord)
     deallocate(P)
+    call hecmw_mpc_mat_finalize(hecMESH, hecMAT, hecMATmpc)
   end subroutine fstr_Newton
 
 
@@ -185,6 +192,7 @@ contains
     type (fstr_info_contactChange)        :: infoCTChange  !< fstr_info_contactChange
     type (fstrST_matrix_contact_lagrange) :: fstrMAT !< type fstrST_matrix_contact_lagrange
 
+    type (hecmwST_matrix), pointer :: hecMATmpc
     integer(kind=kint) :: ndof
     integer(kind=kint) :: ctAlgo
     integer(kind=kint) :: i, iter
@@ -194,6 +202,8 @@ contains
     logical            :: convg, ctchange
     integer(kind=kint) :: n_node_global
     real(kind=kreal), pointer :: coord(:)
+
+    call hecmw_mpc_mat_init(hecMESH, hecMAT, hecMATmpc)
 
     ! sum of n_node among all subdomains (to be used to calc res)
     n_node_global = hecMESH%nn_internal
@@ -239,6 +249,7 @@ contains
       fstrSOLID%dunode(:) = 0.0d0
 
       ! ----- Inner Iteration, lagrange multiplier constant
+      res0   = 0.0d0
       res1   = 0.0d0
       relres = 1.0d0
 
@@ -258,19 +269,22 @@ contains
         endif
 
         ! ----- Set Boundary condition
-        call fstr_AddBC(cstep, hecMESH,hecMAT,fstrSOLID,fstrPARAM,fstrMAT,stepcnt)
+        call hecmw_mpc_mat_ass(hecMESH, hecMAT, hecMATmpc)
+        call hecmw_mpc_trans_rhs(hecMESH, hecMAT, hecMATmpc)
+        call fstr_AddBC(cstep, hecMESH,hecMATmpc,fstrSOLID,fstrPARAM,fstrMAT,stepcnt)
 
         !----- SOLVE [Kt]{du}={R}
-        if( sub_step == restart_step_num .and. iter == 1 ) hecMAT%Iarray(98) = 1
+        if( sub_step == restart_step_num .and. iter == 1 ) hecMATmpc%Iarray(98) = 1
         if( iter == 1 ) then
-          hecMAT%Iarray(97) = 2   !Force numerical factorization
+          hecMATmpc%Iarray(97) = 2   !Force numerical factorization
         else
-          hecMAT%Iarray(97) = 1   !Need numerical factorization
+          hecMATmpc%Iarray(97) = 1   !Need numerical factorization
         endif
-        hecMAT%X = 0.0d0
+        hecMATmpc%X = 0.0d0
         call fstr_set_current_config_to_mesh(hecMESH,fstrSOLID,coord)
-        call solve_LINEQ(hecMESH,hecMAT)
+        call solve_LINEQ(hecMESH,hecMATmpc)
         call fstr_recover_initial_config_to_mesh(hecMESH,fstrSOLID,coord)
+        call hecmw_mpc_tback_sol(hecMESH, hecMAT, hecMATmpc)
 
         if( hecMESH%n_dof == 3 ) then
           call hecmw_update_3_R (hecMESH, hecMAT%X, hecMAT%NP)
@@ -324,8 +338,8 @@ contains
           relres < fstrSOLID%step_ctrl(cstep)%converg ) exit
         res1 = res
 
-        ! ----- check divergence
-        if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. res > fstrSOLID%step_ctrl(cstep)%maxres ) then
+        ! ----- check divergence and NaN
+        if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. res > fstrSOLID%step_ctrl(cstep)%maxres .or. res /= res ) then
           if( hecMESH%my_rank == 0) then
             write(   *,'(a,i5,a,i5)') '     ### Fail to Converge  : at total_step=', cstep, '  sub_step=', sub_step
           end if
@@ -334,7 +348,7 @@ contains
           fstrSOLID%NRstat_i(knstCITER) = al_step                                 ! logging contact iteration
           fstrSOLID%CutBack_stat = fstrSOLID%CutBack_stat + 1
           if( iter == fstrSOLID%step_ctrl(cstep)%max_iter ) fstrSOLID%NRstat_i(knstDRESN) = 1
-          if( res > fstrSOLID%step_ctrl(cstep)%maxres     ) fstrSOLID%NRstat_i(knstDRESN) = 2
+          if( res > fstrSOLID%step_ctrl(cstep)%maxres .or. res /= res ) fstrSOLID%NRstat_i(knstDRESN) = 2
           return
         end if
 
@@ -386,6 +400,7 @@ contains
 
     deallocate(coord)
     fstrSOLID%CutBack_stat = 0
+    call hecmw_mpc_mat_finalize(hecMESH, hecMAT, hecMATmpc)
   end subroutine fstr_Newton_contactALag
 
 
@@ -410,6 +425,7 @@ contains
     type (fstrST_matrix_contact_lagrange)  :: fstrMAT      !< type fstrST_matrix_contact_lagrange
     type (hecmwST_matrix), optional        :: conMAT
 
+    type (hecmwST_matrix), pointer :: hecMATmpc
     integer(kind=kint) :: ndof
     integer(kind=kint) :: ctAlgo
     integer(kind=kint) :: i, iter, max_iter_contact
@@ -423,6 +439,8 @@ contains
     real(kreal)        :: q_residual,x_residual
     real(kind=kreal), pointer :: coord(:)
     integer(kind=kint)  :: istat
+
+    call hecmw_mpc_mat_init(hecMESH, hecMAT, hecMATmpc)
 
     ! sum of n_node among all subdomains (to be used to calc res)
     n_node_global = hecMESH%nn_internal
@@ -495,6 +513,7 @@ contains
       count_step = count_step+1
 
       ! ----- Inner Iteration
+      res0   = 0.d0
       res1   = 0.d0
       relres = 1.d0
 
@@ -522,26 +541,29 @@ contains
         endif
 
         ! ----- Set Boundary condition
+        call hecmw_mpc_mat_ass(hecMESH, hecMAT, hecMATmpc)
+        call hecmw_mpc_trans_rhs(hecMESH, hecMAT, hecMATmpc)
         if(paraContactFlag.and.present(conMAT)) then
-          call fstr_AddBC(cstep, hecMESH, hecMAT, fstrSOLID, fstrPARAM, fstrMAT, stepcnt, conMAT)
+          call fstr_AddBC(cstep, hecMESH, hecMATmpc, fstrSOLID, fstrPARAM, fstrMAT, stepcnt, conMAT)
         else
-          call fstr_AddBC(cstep, hecMESH, hecMAT, fstrSOLID, fstrPARAM, fstrMAT, stepcnt)
+          call fstr_AddBC(cstep, hecMESH, hecMATmpc, fstrSOLID, fstrPARAM, fstrMAT, stepcnt)
         endif
 
         nndof = hecMAT%N*hecMAT%ndof
 
         !----- SOLVE [Kt]{du}={R}
         ! ----  For Parallel Contact with Multi-Partition Domains
-        hecMAT%X = 0.0d0
+        hecMATmpc%X = 0.0d0
         call fstr_set_current_config_to_mesh(hecMESH,fstrSOLID,coord)
         if(paraContactFlag.and.present(conMAT)) then
-          q_residual = fstr_get_norm_para_contact(hecMAT,fstrMAT,conMAT,hecMESH)
-          call solve_LINEQ_contact(hecMESH, hecMAT, fstrMAT, istat, 1.0D0, conMAT)
+          q_residual = fstr_get_norm_para_contact(hecMATmpc,fstrMAT,conMAT,hecMESH)
+          call solve_LINEQ_contact(hecMESH, hecMATmpc, fstrMAT, istat, 1.0D0, conMAT)
         else
-          q_residual = fstr_get_norm_contact('residualForce',hecMESH,hecMAT,fstrSOLID,fstrMAT)
-          call solve_LINEQ_contact(hecMESH, hecMAT, fstrMAT, istat)
+          q_residual = fstr_get_norm_contact('residualForce',hecMESH,hecMATmpc,fstrSOLID,fstrMAT)
+          call solve_LINEQ_contact(hecMESH, hecMATmpc, fstrMAT, istat)
         endif
         call fstr_recover_initial_config_to_mesh(hecMESH,fstrSOLID,coord)
+        call hecmw_mpc_tback_sol(hecMESH, hecMAT, hecMATmpc)
         ! ----- check matrix solver error
         if( istat /= 0 ) then
           if( hecMESH%my_rank == 0) then
@@ -619,8 +641,8 @@ contains
           relres < fstrSOLID%step_ctrl(cstep)%converg ) exit
         res1 = res
 
-        ! ----- check divergence
-        if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. res > fstrSOLID%step_ctrl(cstep)%maxres ) then
+        ! ----- check divergence and NaN
+        if( iter == fstrSOLID%step_ctrl(cstep)%max_iter .or. res > fstrSOLID%step_ctrl(cstep)%maxres .or. res /= res ) then
           if( hecMESH%my_rank == 0) then
             write(   *,'(a,i5,a,i5)') '     ### Fail to Converge  : at total_step=', cstep, '  sub_step=', sub_step
           end if
@@ -629,7 +651,7 @@ contains
           fstrSOLID%NRstat_i(knstCITER) = count_step                              ! logging contact iteration
           fstrSOLID%CutBack_stat = fstrSOLID%CutBack_stat + 1
           if( iter == fstrSOLID%step_ctrl(cstep)%max_iter ) fstrSOLID%NRstat_i(knstDRESN) = 1
-          if( res > fstrSOLID%step_ctrl(cstep)%maxres     ) fstrSOLID%NRstat_i(knstDRESN) = 2
+          if( res > fstrSOLID%step_ctrl(cstep)%maxres .or. res /= res ) fstrSOLID%NRstat_i(knstDRESN) = 2
           return
         end if
 
@@ -682,6 +704,22 @@ contains
         return
       end if
 
+      ! ----- Set residual for next newton iteration
+      if(paraContactFlag.and.present(conMAT)) then
+        call fstr_Update_NDForce(cstep,hecMESH,hecMAT,fstrSOLID,conMAT )
+      else
+        call fstr_Update_NDForce(cstep,hecMESH,hecMAT,fstrSOLID)
+      endif
+
+      if( fstr_is_contact_active() )  then
+        if(paraContactFlag.and.present(conMAT)) then
+          call hecmw_mat_clear_b( conMAT )
+          call fstr_Update_NDForce_contact(cstep,hecMESH,hecMAT,fstrMAT,fstrSOLID,conMAT)
+        else
+          call fstr_Update_NDForce_contact(cstep,hecMESH,hecMAT,fstrMAT,fstrSOLID)
+        endif
+      endif
+
     enddo loopFORcontactAnalysis
 
     fstrSOLID%NRstat_i(knstCITER) = count_step ! logging contact iteration
@@ -697,6 +735,7 @@ contains
 
     deallocate(coord)
     fstrSOLID%CutBack_stat = 0
+    call hecmw_mpc_mat_finalize(hecMESH, hecMAT, hecMATmpc)
   end subroutine fstr_Newton_contactSLag
 
 

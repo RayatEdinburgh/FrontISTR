@@ -116,9 +116,17 @@ contains
                 stiffness(1:nn*ndof, 1:nn*ndof), cdsys_ID, coords, time, tincr, u(1:3, 1:nn) )
             endif
           else if( fstrSOLID%sections(isect)%elemopt361 == kel361IC ) then ! incompatible element
-            if( material%nlgeom_flag /= INFINITE ) call StiffMat_abort( ic_type, 3 )
-            call STF_C3D8IC( ic_type, nn, ecoord(:, 1:nn), fstrSOLID%elements(icel)%gausses(:), &
-              &           stiffness(1:nn*ndof, 1:nn*ndof), cdsys_ID, coords, time, tincr )
+            if( fstrSOLID%TEMP_ngrp_tot > 0 .or. fstrSOLID%TEMP_irres >0 ) then
+              CALL STF_C3D8IC                                                              &
+                ( ic_type, nn, ecoord(:,1:nn), fstrSOLID%elements(icel)%gausses(:), &
+                stiffness(1:nn*ndof, 1:nn*ndof), cdsys_ID, coords, time, tincr, u(1:3,1:nn), &
+                fstrSOLID%elements(icel)%aux, tt(1:nn) )
+            else
+              CALL STF_C3D8IC                                                              &
+                ( ic_type, nn, ecoord(:,1:nn), fstrSOLID%elements(icel)%gausses(:), &
+                stiffness(1:nn*ndof, 1:nn*ndof), cdsys_ID, coords, time, tincr, u(1:3,1:nn), &
+                fstrSOLID%elements(icel)%aux )
+            endif
           else if( fstrSOLID%sections(isect)%elemopt361 == kel361FBAR ) then ! F-bar element
             if( fstrSOLID%TEMP_ngrp_tot > 0 .or. fstrSOLID%TEMP_irres >0 ) then
               call STF_C3D8Fbar                                                                        &
@@ -219,8 +227,6 @@ contains
       write(*,*) '###ERROR### : Element type not supported for static analysis'
     else if( flag == 2 ) then
       write(*,*) '###ERROR### : Element type not supported for nonlinear static analysis'
-    else if( flag == 3 ) then !361IC element cannot be used for nonlinear analysis
-      write(*,*) '###ERROR### : nonlinear analysis not supported with 361 IC element'
     endif
     write(*,*) ' ic_type = ', ic_type
     call hecmw_abort(hecmw_comm_get_comm())
