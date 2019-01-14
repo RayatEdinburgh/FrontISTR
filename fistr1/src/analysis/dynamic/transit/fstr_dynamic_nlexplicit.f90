@@ -134,9 +134,11 @@ contains
       call fstr_dynamic_Output(hecMESH, fstrSOLID, fstrDYNAMIC, fstrPARAM)
       call dynamic_output_monit(hecMESH, fstrPARAM, fstrDYNAMIC, fstrEIG, fstrSOLID)
     end if
-print *, fstr_is_contact_active()	
-!	if( fstr_is_contact_active() )  &
-!	  call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+
+	if( associated( fstrSOLID%contacts ) )  then
+      call initialize_contact_output_vectors(fstrSOLID,hecMAT)
+	  call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+    endif
 
     do i= restrt_step_num, fstrDYNAMIC%n_step
 
@@ -315,6 +317,9 @@ print *, fstr_is_contact_active()
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
 	  
+      if( associated( fstrSOLID%contacts ) )  then
+	    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+      endif
 
       if( fstrDYNAMIC%restart_nout > 0 .and. &
           (mod(i,fstrDYNAMIC%restart_nout).eq.0 .or. i.eq.fstrDYNAMIC%n_step) ) then
