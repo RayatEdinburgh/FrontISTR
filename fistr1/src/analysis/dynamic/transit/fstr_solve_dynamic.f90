@@ -193,7 +193,7 @@ contains
 
       else if(fstrDYNAMIC%idx_eqa == 11) then  ! explicit dynamic analysis
         call fstr_solve_dynamic_nlexplicit(hecMESH,hecMAT,fstrSOLID,fstrEIG   &
-          ,fstrDYNAMIC,fstrRESULT,fstrPARAM &
+          ,fstrDYNAMIC,fstrRESULT,fstrPARAM, infoCTChange  &
           ,fstrCPL, restrt_step_num )
       endif
 

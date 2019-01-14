@@ -29,7 +29,7 @@ contains
   !C-- subroutine  fstr_solve_LINEAR_DYNAMIC
   !C================================================================C
   subroutine fstr_solve_dynamic_nlexplicit(hecMESH,hecMAT,fstrSOLID,fstrEIG   &
-      ,fstrDYNAMIC,fstrRESULT,fstrPARAM &
+      ,fstrDYNAMIC,fstrRESULT,fstrPARAM,infoCTChange &
       ,fstrCPL, restrt_step_num )
 
     implicit none
@@ -43,7 +43,7 @@ contains
     type(hecmwST_result_data)            :: fstrRESULT
     type(fstr_param)                     :: fstrPARAM
     type(fstr_dynamic)                   :: fstrDYNAMIC
-    type(fstrST_matrix_contact_lagrange) :: fstrMAT !< type fstrST_matrix_contact_lagrange
+    type(fstr_info_contactChange)        :: infoCTChange !< fstr_info_contactChange
     type(fstr_couple)                    :: fstrCPL !for COUPLE
 
     !C
@@ -134,7 +134,8 @@ contains
       call fstr_dynamic_Output(hecMESH, fstrSOLID, fstrDYNAMIC, fstrPARAM)
       call dynamic_output_monit(hecMESH, fstrPARAM, fstrDYNAMIC, fstrEIG, fstrSOLID)
     end if
-
+	
+	call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
 
     do i= restrt_step_num, fstrDYNAMIC%n_step
 
@@ -198,9 +199,9 @@ contains
         !C
         !C-- geometrical boundary condition
 
-        call dynamic_mat_ass_bc   (hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC, fstrPARAM, fstrMAT)
-        call dynamic_mat_ass_bc_vl(hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC, fstrPARAM, fstrMAT)
-        call dynamic_mat_ass_bc_ac(hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC, fstrPARAM, fstrMAT)
+        call DYNAMIC_EXPLICIT_ASS_BC(hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC)
+        call DYNAMIC_EXPLICIT_ASS_VL(hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC)
+        call DYNAMIC_EXPLICIT_ASS_AC(hecMESH, hecMATmpc, fstrSOLID, fstrDYNAMIC)
 
         ! Finish the calculation
         do j = 1 ,ndof*nnod
@@ -312,13 +313,14 @@ contains
         fstrSOLID%unode(j)  = fstrSOLID%unode(j) + fstrSOLID%dunode(j)
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
+	  
 
       if( fstrDYNAMIC%restart_nout > 0 .and. &
           (mod(i,fstrDYNAMIC%restart_nout).eq.0 .or. i.eq.fstrDYNAMIC%n_step) ) then
         call fstr_write_restart_dyna_nl(i,hecMESH,fstrSOLID,fstrDYNAMIC,fstrPARAM)
       end if
       !
-      !C-- output new displacement, velocity and accelaration
+      !C-- output new displacement, velocity and acceleration
       call fstr_dynamic_Output(hecMESH, fstrSOLID, fstrDYNAMIC, fstrPARAM)
       call dynamic_output_monit(hecMESH, fstrPARAM, fstrDYNAMIC, fstrEIG, fstrSOLID)
 
