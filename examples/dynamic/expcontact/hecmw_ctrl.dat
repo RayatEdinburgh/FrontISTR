@@ -1,0 +1,13 @@
+##
+## HEC-MW control file for FrontSTR
+## Auto created by fstr_srun.sh
+## 2019年 1月 14日 月曜日 15:01:05 JST
+##
+!MESH, NAME=fstrMSH,TYPE=HECMW-ENTIRE
+2elem.msh
+!CONTROL,NAME=fstrCNT
+impact2elem.cnt
+!RESULT,NAME=fstrRES,IO=OUT
+impact2elem.res
+!RESULT,NAME=vis_out,IO=OUT
+impact2elem.vis

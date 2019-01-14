@@ -35,7 +35,7 @@ contains
     type(fstrST_matrix_contact_lagrange) :: fstrMAT !< type fstrST_matrix_contact_lagrange
     type(fstr_info_contactChange)        :: infoCTChange !< type fstr_info_contactChange
     type(hecmwST_matrix), optional       :: conMAT
-    integer(kind=kint) :: i, j, num_monit, ig, is, iE, ik, in, ing, iunitS, iunit, ierror, flag, limit
+    integer(kind=kint) :: i, j, num_monit, ig, is, iE, ik, in, ing, iunitS, iunit, ierror, flag, limit, ndof
     character(len=HECMW_FILENAME_LEN) :: fname, header
     integer(kind=kint) :: restrt_step_num
     integer(kind=kint) :: restrt_step(1)
@@ -150,6 +150,29 @@ contains
     restrt_step_num = 1
     fstrDYNAMIC%i_step = 0
     infoCTChange%contactNode_previous = 0
+	
+	if( associated(g_InitialCnd) ) then
+      ndof = HECMAT%NDOF
+      do j=1,size(g_InitialCnd)
+     !   is = hecMESH%node_group%grp_index(g_InitialCnd(j)%grpid-1) + 1
+     !   ie = hecMESH%node_group%grp_index(g_InitialCnd(j)%grpid  )
+        if( g_InitialCnd(j)%cond_name=="velocity" ) then
+              do i= 1, hecMESH%n_node
+                ing = g_InitialCnd(j)%intval(i)
+                if( ing<=0 ) cycle
+              !  ik = hecMESH%node_group%grp_item(i)    
+                fstrDYNAMIC%VEL(NDOF*i-(NDOF-ing),1) = g_InitialCnd(j)%realval(i)
+              end do
+        elseif( g_InitialCnd(j)%cond_name=="acceleration" ) then
+              do i= 1, hecMESH%n_node
+                ing = g_InitialCnd(j)%intval(i)
+                if( ing<=0 ) cycle
+            !    ik = hecMESH%node_group%grp_item(i)    
+                fstrDYNAMIC%ACC(NDOF*i-(NDOF-ing),1) = g_InitialCnd(j)%realval(i)
+              end do
+        endif
+      end do
+    endif
 
     if(fstrDYNAMIC%restart_nout >= 0 ) then
       call dynamic_bc_init   (hecMESH, hecMAT, fstrSOLID, fstrDYNAMIC)

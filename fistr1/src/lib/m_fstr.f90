@@ -125,6 +125,15 @@ module m_fstr
   integer(kind=kint) :: ITMAX
   real(kind=kreal)   :: EPS   ! /=fstr_param%eps
   real(kind=kreal)   :: TEMTOL
+  
+  type tInitialCondition
+     character(len=HECMW_FILENAME_LEN)          :: cond_name
+     integer                    :: node_elem                    !< node =0;  element =1
+     integer                    :: grpid
+     integer, pointer           :: intval(:)     => null()      !< if -1, not initialized, otherwise dof number
+     real(kind=kreal), pointer  :: realval(:)    => null()      !< initial value
+  end type
+  type( tInitialCondition ), pointer, save :: g_InitialCnd(:) => null()
 
   !>  FSTR INNER CONTROL PARAMETERS  (fstrPARAM)
   type fstr_param
@@ -317,7 +326,7 @@ module m_fstr
 
     real(kind=kreal), pointer :: CONT_NFORCE(:)  !< contact normal force for output
     real(kind=kreal), pointer :: CONT_FRIC(:)    !< contact friction force for output
-    real(kind=kreal), pointer :: CONT_RELVEL(:)  !< contact ralative velocity for output
+    real(kind=kreal), pointer :: CONT_RELVEL(:)  !< contact relative velocity for output
     real(kind=kreal), pointer :: CONT_STATE(:)   !< contact state for output
 
     type(fstr_solid_physic_val), pointer :: SOLID=>null()     !< for solid physical value stracture
