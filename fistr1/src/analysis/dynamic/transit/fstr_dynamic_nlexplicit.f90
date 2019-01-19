@@ -59,7 +59,7 @@ contains
     integer(kind=kint) :: revocap_flag
     real(kind=kreal), allocatable :: prevB(:)
 
-    real(kind=kreal) :: a1, a2, a3, b1, b2, b3, c1, c2
+    real(kind=kreal) :: a1, a2, a3, b1, b2, b3
     real(kind=kreal) :: bsize, res
     real(kind=kreal) :: time_1, time_2
 
@@ -68,7 +68,6 @@ contains
     real(kind=kreal), parameter :: PI = 3.14159265358979323846D0
 
     a1 = 0.0d0; a2 = 0.0d0; a3 = 0.0d0; b1 = 0.0d0; b2 = 0.0d0; b3 = 0.0d0
-    c1 = 0.0d0; c2 = 0.0d0
 
     call cpu_time( time_1 )
 
@@ -121,7 +120,6 @@ contains
 
     deallocate(mark)
 
-
     !C-- output of initial state
     if( restrt_step_num == 1 ) then
       do j = 1 ,ndof*nnod
@@ -150,6 +148,7 @@ contains
       call dynamic_mat_ass_load (hecMESH, hecMAT, fstrSOLID, fstrDYNAMIC, fstrPARAM)
       do j=1, hecMESH%n_node*  hecMESH%n_dof
         hecMAT%B(j)=hecMAT%B(j)-fstrSOLID%QFORCE(j)
+!		print *, j, fstrSOLID%QFORCE(j)
       end do
 
       !C ********************************************************************************
@@ -195,8 +194,11 @@ contains
         call hecmw_mpc_trans_rhs(hecMESH, hecMAT, hecMATmpc)
 
         do j = 1 ,ndof*nnod
-          hecMATmpc%B(j) = hecMATmpc%B(j) + 2.d0*a1* fstrEIG%mass(j) * fstrDYNAMIC%DISP(j,1)  &
-            + (- a1 + a2 * fstrDYNAMIC%ray_m) * fstrEIG%mass(j) * fstrDYNAMIC%DISP(j,3)
+  !        hecMATmpc%B(j) = hecMATmpc%B(j) + 2.d0*a1* fstrEIG%mass(j) * fstrDYNAMIC%DISP(j,1)  &
+  !          + (- a1 + a2 * fstrDYNAMIC%ray_m) * fstrEIG%mass(j) * fstrDYNAMIC%DISP(j,3)
+           hecMATmpc%B(j) = hecMATmpc%B(j) +  &
+            ( a1 - a2 * fstrDYNAMIC%ray_m) * fstrEIG%mass(j) * (fstrDYNAMIC%DISP(j,1) - fstrDYNAMIC%DISP(j,3))
+!			print *, j, hecMATmpc%B(j), fstrDYNAMIC%DISP(j,1) - fstrDYNAMIC%DISP(j,3)
         end do
 
         !C
@@ -211,11 +213,12 @@ contains
           hecMATmpc%X(j) = hecMATmpc%B(j) / fstrDYNAMIC%VEC1(j)
           if(dabs(hecMATmpc%X(j)) > 1.0d+5) then
             if( hecMESH%my_rank == 0 ) then
-              print *, 'Displacement increment too large, please adjust your step size!',i
+              print *, 'Displacement increment too large, please adjust your step size!',i,hecMATmpc%X(j)
               write(imsg,*) 'Displacement increment too large, please adjust your step size!',i,hecMATmpc%B(j),fstrDYNAMIC%VEC1(j)
             end if
             call hecmw_abort( hecmw_comm_get_comm())
           end if
+!		  print *, j, hecMATmpc%X(j)
         end do
         call hecmw_mpc_tback_sol(hecMESH, hecMAT, hecMATmpc)
 
@@ -293,27 +296,27 @@ contains
       !C *****************************************************
 
       !C
-      !C-- new displacement, velocity and accelaration
+      !C-- new displacement, velocity and acceleration
       !C
       do j = 1 ,ndof*nnod
-        fstrDYNAMIC%ACC (j,1) = a1*(hecMAT%X(j) - 2.d0*fstrDYNAMIC%DISP(j,1) &
+        fstrDYNAMIC%ACC (j,1) = a1*(hecMAT%X(j) - fstrDYNAMIC%DISP(j,1) &
           + fstrDYNAMIC%DISP(j,3))
-        fstrDYNAMIC%VEL (j,1) = a2*(hecMAT%X(j) - fstrDYNAMIC%DISP(j,3))
+        fstrDYNAMIC%VEL (j,1) = a2*(hecMAT%X(j) + fstrDYNAMIC%DISP(j,1)- fstrDYNAMIC%DISP(j,3))
 
         fstrSOLID%unode(j)  = fstrDYNAMIC%DISP(j,1)
-        fstrSOLID%dunode(j)  = hecMAT%X(j)-fstrDYNAMIC%DISP(j,1)
+        fstrSOLID%dunode(j)  = hecMAT%X(j)
 
         fstrDYNAMIC%DISP(j,3) = fstrDYNAMIC%DISP(j,1)
-        fstrDYNAMIC%DISP(j,1) = hecMAT%X(j)
+        fstrDYNAMIC%DISP(j,1) = fstrSOLID%unode(j) + hecMAT%X(j)
 
-        hecMAT%X(j)  = fstrSOLID%dunode(j)
+     !   hecMAT%X(j)  = fstrSOLID%dunode(j)
       end do
 
       ! ----- update strain, stress, and internal force
       call fstr_UpdateNewton( hecMESH, hecMAT, fstrSOLID, fstrDYNAMIC%t_curr, fstrDYNAMIC%t_delta, 1 )
 
       do j = 1 ,ndof*nnod
-        fstrSOLID%unode(j)  = fstrSOLID%unode(j) + fstrSOLID%dunode(j)
+        fstrSOLID%unode(j)  = fstrDYNAMIC%DISP(j,1)
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
 	  

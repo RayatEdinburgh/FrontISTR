@@ -10,6 +10,8 @@ module m_static_LIB_C3D8
   use elementInfo
 
   implicit none
+  
+  real(kind=kreal), parameter, private :: eps = EPSILON(1.d0)
 
 contains
 
@@ -319,7 +321,10 @@ contains
       dstrain(5) = ( gdispderiv(2, 3)+gdispderiv(3, 2) )
       dstrain(6) = ( gdispderiv(3, 1)+gdispderiv(1, 3) )
       dstrain(:) = dstrain(:)-EPSTH(:)
-
+      do i=1,6
+        if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+      enddo
+	  
       F(1:3,1:3) = 0.d0; F(1,1)=1.d0; F(2,2)=1.d0; F(3,3)=1.d0; !deformation gradient
       if( flag == INFINITE ) then
         gausses(LX)%strain(1:6) = dstrain(1:6)+EPSTH(:)

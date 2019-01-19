@@ -9,7 +9,7 @@ module m_fstr_ass_load
 contains
   !
   !======================================================================!
-  !> This subroutine assmble following external force into fstrSOLID%GL and hecMAT%B afterwards
+  !> This subroutine assemble following external force into fstrSOLID%GL and hecMAT%B afterwards
   !>  -#  concentrated nodal force
   !>  -#  surface pressure
   !>  -#  volume force
@@ -26,9 +26,9 @@ contains
     use m_fstr_spring
     use m_common_struct
     use m_utilities
-    integer, intent(in)                  :: cstep !< current step
-    type(hecmwST_matrix), intent(inout)  :: hecMAT !< hecmw matrix
-    type(hecmwST_local_mesh), intent(in) :: hecMESH !< hecmw mesh
+    integer, intent(in)                  :: cstep     !< current step
+    type(hecmwST_matrix), intent(inout)  :: hecMAT    !< hecmw matrix
+    type(hecmwST_local_mesh), intent(in) :: hecMESH   !< hecmw mesh
     type(fstr_solid), intent(inout)      :: fstrSOLID !< fstr_solid
     type(fstr_param), intent(inout)      :: fstrPARAM !< analysis control parameters
 

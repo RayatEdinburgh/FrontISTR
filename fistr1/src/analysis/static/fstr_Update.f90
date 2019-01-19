@@ -159,6 +159,7 @@ contains
                 qf(1:nn*ndof), fstrSOLID%elements(icel)%gausses(:), iter, time, tincr )
             endif
           else if( fstrSOLID%sections(isect)%elemopt361 == kel361IC ) then ! incompatible element
+
             if( fstrSOLID%TEMP_ngrp_tot > 0 .or. fstrSOLID%TEMP_irres > 0 ) then
               call UPDATE_C3D8IC( ic_type,nn,ecoord(:,1:nn), total_disp(1:3,1:nn), du(1:3,1:nn), ddu(1:3,1:nn), cdsys_ID, coords,&
                 qf(1:nn*ndof), fstrSOLID%elements(icel)%gausses(:), iter, time, tincr, &
