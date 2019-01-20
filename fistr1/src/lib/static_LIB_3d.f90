@@ -10,6 +10,7 @@ module m_static_LIB_3d
 
   implicit none
 
+  real(kind=kreal), parameter, private :: eps = EPSILON(1.d0)
   real(kind=kreal), parameter, private :: I3(3,3) = reshape((/ &
       &  1.d0, 0.d0, 0.d0, 0.d0, 1.d0, 0.d0, 0.d0, 0.d0, 1.d0/), (/3,3/))
 
@@ -878,6 +879,9 @@ contains
 
       F(1:3,1:3) = 0.d0; F(1,1)=1.d0; F(2,2)=1.d0; F(3,3)=1.d0; !deformation gradient
       if( flag == INFINITE ) then
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
         gausses(LX)%strain(1:6) = dstrain(1:6)+EPSTH(1:6)
 
       else if( flag == TOTALLAG ) then
@@ -891,6 +895,9 @@ contains
           +gdispderiv(2, 2)*gdispderiv(2, 3)+gdispderiv(3, 2)*gdispderiv(3, 3) )
         dstrain(6) = dstrain(6)+( gdispderiv(1, 1)*gdispderiv(1, 3)                                     &
           +gdispderiv(2, 1)*gdispderiv(2, 3)+gdispderiv(3, 1)*gdispderiv(3, 3) )
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
 
         gausses(LX)%strain(1:6) = dstrain(1:6)+EPSTH(:)
         F(1:3,1:3) = F(1:3,1:3) + gdispderiv(1:3,1:3)
@@ -900,6 +907,9 @@ contains
         rot(1, 2)= 0.5d0*(gdispderiv(1, 2)-gdispderiv(2, 1) );  rot(2, 1) = -rot(1, 2)
         rot(2, 3)= 0.5d0*(gdispderiv(2, 3)-gdispderiv(3, 2) );  rot(3, 2) = -rot(2, 3)
         rot(1, 3)= 0.5d0*(gdispderiv(1, 3)-gdispderiv(3, 1) );  rot(3, 1) = -rot(1, 3)
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
 
         gausses(LX)%strain(1:6) = gausses(LX)%strain_bak(1:6)+dstrain(1:6)+EPSTH(:)
 

@@ -13,6 +13,7 @@ module m_static_LIB_Fbar
 
   real(kind=kreal), private, parameter :: I33(3,3) = &
     &  reshape( (/1.d0, 0.d0, 0.d0, 0.d0, 1.d0, 0.d0, 0.d0, 0.d0, 1.d0/), (/3,3/) )
+  real(kind=kreal), parameter, private :: eps = EPSILON(1.d0)
 
 contains
 
@@ -496,6 +497,9 @@ contains
         dstrain(5) = ( gdispderiv(2, 3)+gdispderiv(3, 2) )
         dstrain(6) = ( gdispderiv(3, 1)+gdispderiv(1, 3) )
         dstrain(:) = dstrain(:)-EPSTH(:)
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
 
         gausses(LX)%strain(1:6) = dstrain(1:6)+EPSTH(:)
 
@@ -510,6 +514,9 @@ contains
         dstrain(5) = dot_product(Fbar(1:3,2),Fbar(1:3,3))
         dstrain(6) = dot_product(Fbar(1:3,3),Fbar(1:3,1))
         dstrain(:) = dstrain(:)-EPSTH(:)
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
 
         gausses(LX)%strain(1:6) = dstrain(1:6)+EPSTH(:)
 
@@ -525,6 +532,9 @@ contains
         dstrain(5) = ( gdispderiv(2, 3)+gdispderiv(3, 2) )
         dstrain(6) = ( gdispderiv(3, 1)+gdispderiv(1, 3) )
         dstrain(:) = dstrain(:)-EPSTH(:)
+        do i=1,6
+          if( dabs(dstrain(i))<=eps ) dstrain(i)=0.d0
+        enddo
 
         rot = 0.0D0
         rot(1, 2)= 0.5D0*( gdispderiv(1, 2)-gdispderiv(2, 1) );  rot(2, 1) = -rot(1, 2)
