@@ -291,6 +291,20 @@ contains
       enddo
       !C *****************************************************
 
+	  !C
+      !C-- new displacement, velocity and acceleration
+      !C
+      do j = 1 ,ndof*nnod
+        fstrSOLID%unode(j)  = fstrDYNAMIC%DISP(j,1)
+        fstrSOLID%dunode(j)  = hecMAT%X(j)-fstrDYNAMIC%DISP(j,1)
+      enddo
+	  if( associated( fstrSOLID%contacts ) )  then
+	    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+        call FILM(1,ndof,fstrDYNAMIC%VEC1,fstrSOLID,fstrSOLID%ddunode)
+        do j = 1 ,ndof*nnod
+          hecMAT%X(j)  = hecMAT%X(j) - fstrSOLID%ddunode(j)
+        enddo
+      endif
       !C
       !C-- new displacement, velocity and acceleration
       !C
@@ -315,11 +329,6 @@ contains
         fstrSOLID%unode(j)  = fstrSOLID%unode(j) + fstrSOLID%dunode(j)
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
-	  
-      if( associated( fstrSOLID%contacts ) )  then
-	    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
-        call FILM(1,ndof,fstrDYNAMIC%VEC1,fstrSOLID,hecMAT%X)
-      endif
 
       if( fstrDYNAMIC%restart_nout > 0 .and. &
           (mod(i,fstrDYNAMIC%restart_nout).eq.0 .or. i.eq.fstrDYNAMIC%n_step) ) then
@@ -381,7 +390,7 @@ contains
         call getShapeFunc( etype, fstrSOLID%contacts(i)%states(j)%lpos(:), shapefunc )
         fdum = 1.d0/mmat( (slave-1)*ndof+1 )
 		do k=1,nn
-          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
+          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(j)
           fdum = fdum + shapefunc(k)*shapefunc(k)/mmat( (iSS-1)*ndof+1 )
         enddo
         fstrSOLID%contacts(i)%states(j)%multiplier(1) = -1.d0/fdum * fstrSOLID%contacts(i)%states(j)%distance
