@@ -292,7 +292,7 @@ contains
       !C *****************************************************
 
 	  !C
-      !C-- new displacement, velocity and acceleration
+      !C-- contact corrector
       !C
       do j = 1 ,ndof*nnod
         fstrSOLID%unode(j)  = fstrDYNAMIC%DISP(j,1)
@@ -390,7 +390,7 @@ contains
         call getShapeFunc( etype, fstrSOLID%contacts(i)%states(j)%lpos(:), shapefunc )
         fdum = 1.d0/mmat( (slave-1)*ndof+1 )
 		do k=1,nn
-          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(j)
+          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
           fdum = fdum + shapefunc(k)*shapefunc(k)/mmat( (iSS-1)*ndof+1 )
         enddo
         fstrSOLID%contacts(i)%states(j)%multiplier(1) = -1.d0/fdum * fstrSOLID%contacts(i)%states(j)%distance
