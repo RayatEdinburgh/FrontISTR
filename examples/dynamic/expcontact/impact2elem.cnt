@@ -5,7 +5,7 @@
  5
 !SOLUTION, TYPE=DYNAMIC
 !INITIAL_CONDITION, TYPE=VELOCITY
- MOVE, 3, -1.0
+ MOVE, 3, -10.01
 !SECTION, SECNUM=1, FORM361=BBAR
 !DYNAMIC
  11 , 1
@@ -36,5 +36,5 @@
 !VISUAL,method=PSR
 !surface_num=1
 !surface 1
-!output_type=VTK
+!output_type=COMPLETE_REORDER_AVS
 !END

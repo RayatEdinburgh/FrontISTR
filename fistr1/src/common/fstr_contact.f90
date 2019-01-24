@@ -215,15 +215,15 @@ contains
 
   !> Scanning contact state
   subroutine fstr_scan_contact_state( cstep, dt, ctAlgo, hecMESH, fstrSOLID, infoCTChange, B )
-    integer, intent(in)                    :: cstep      !< current step number
-      real(kind=kreal), intent(in)           :: dt
-    integer, intent(in)                    :: ctAlgo     !< contact analysis algorithm
-    type( hecmwST_local_mesh ), intent(in) :: hecMESH     !< type mesh
-    type(fstr_solid), intent(inout)        :: fstrSOLID   !< type fstr_solid
-    type(fstr_info_contactChange), intent(inout):: infoCTChange   !<
-    !      logical, intent(inout)                 :: changed     !< if contact state changed
-    real(kind=kreal), optional             :: B(:)        !< nodal force residual
-    character(len=9)                       :: flag_ctAlgo !< contact analysis algorithm flag
+    integer, intent(in)                          :: cstep       !< current step number
+    real(kind=kreal), intent(in)                 :: dt
+    integer, intent(in)                          :: ctAlgo      !< contact analysis algorithm
+    type( hecmwST_local_mesh ), intent(in)       :: hecMESH     !< type mesh
+    type(fstr_solid), intent(inout)              :: fstrSOLID   !< type fstr_solid
+    type(fstr_info_contactChange), intent(inout) :: infoCTChange   !<
+    real(kind=kreal), optional                   :: B(:)        !< nodal force residual
+
+    character(len=9)                             :: flag_ctAlgo !< contact analysis algorithm flag
     integer :: i, grpid
     logical :: iactive
 

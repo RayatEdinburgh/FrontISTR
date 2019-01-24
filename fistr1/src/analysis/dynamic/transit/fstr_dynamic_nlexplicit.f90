@@ -103,12 +103,12 @@ contains
     call setMASS(fstrSOLID,hecMESH,hecMAT,fstrEIG)
     call hecmw_mpc_trans_mass(hecMESH, hecMAT, fstrEIG%mass)
 
-    allocate(mark(hecMAT%NP * hecMAT%NDOF))
-    call hecmw_mpc_mark_slave(hecMESH, hecMAT, mark)
+  !  allocate(mark(hecMAT%NP * hecMAT%NDOF))
+  !  call hecmw_mpc_mark_slave(hecMESH, hecMAT, mark)
 
     do j = 1 ,ndof*nnod
       fstrDYNAMIC%VEC1(j) = (a1 + a2 *fstrDYNAMIC%ray_m) * fstrEIG%mass(j)
-      if(mark(j) == 1) fstrDYNAMIC%VEC1(j) = 1.d0
+    !  if(mark(j) == 1) fstrDYNAMIC%VEC1(j) = 1.d0
       if(dabs(fstrDYNAMIC%VEC1(j)) < 1.0e-20) then
         if( hecMESH%my_rank == 0 ) then
           write(*,*) 'stop due to fstrDYNAMIC%VEC(j) = 0 ,  j = ', j
@@ -118,7 +118,7 @@ contains
       endif
     end do
 
-    deallocate(mark)
+  !  deallocate(mark)
 
     !C-- output of initial state
     if( restrt_step_num == 1 ) then
@@ -142,6 +142,7 @@ contains
 
       fstrDYNAMIC%i_step = i
       fstrDYNAMIC%t_curr = fstrDYNAMIC%t_delta * i
+      print *, "-----Step:",i, "---time=", fstrDYNAMIC%t_curr
       !C
       !C-- mechanical boundary condition
 
@@ -317,6 +318,7 @@ contains
 	  
       if( associated( fstrSOLID%contacts ) )  then
 	    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+        call FILM(1,ndof,fstrDYNAMIC%VEC1,fstrSOLID,hecMAT%X)
       endif
 
       if( fstrDYNAMIC%restart_nout > 0 .and. &
@@ -351,5 +353,42 @@ contains
     end if
 
   end subroutine fstr_solve_dynamic_nlexplicit
+  
+  !< This subroutine implements Forward increment Lagrange multiplier method( NJ Carpenter et al. Int.J.Num.Meth.Eng.,32(1991),103-128 )
+  subroutine FILM(cstep,ndof,mmat,fstrSOLID,uc)
+    integer, intent(in)            :: cstep
+    integer, intent(in)            :: ndof
+    real(kind=kreal), intent(in)   :: mmat(:)
+	type(fstr_solid), intent(in)   :: fstrSOLID
+    real(kind=kreal), intent(out)  :: uc(:)
+	
+    integer :: i, j, k, grpid, slave, nn, iSS, sid, etype
+    real(kind=kreal) :: fdum, shapefunc(l_max_surface_node), lambda(3)
+
+    uc = 0.d0	
+    do i=1,size(fstrSOLID%contacts)
+    !  grpid = fstrSOLID%contacts(i)%group
+    !  if( .not. fstr_isContactActive( fstrSOLID, grpid, cstep ) ) then
+    !    call clear_contact_state(fstrSOLID%contacts(i));  cycle
+    !  endif
+	  
+      do j= 1, size(fstrSOLID%contacts(i)%slave)
+        if( fstrSOLID%contacts(i)%states(j)%state == CONTACTFREE ) cycle
+        slave = fstrSOLID%contacts(i)%slave(j)
+        sid = fstrSOLID%contacts(i)%states(j)%surface
+		nn = size( fstrSOLID%contacts(i)%master(sid)%nodes )
+        etype = fstrSOLID%contacts(i)%master(sid)%etype
+        call getShapeFunc( etype, fstrSOLID%contacts(i)%states(j)%lpos(:), shapefunc )
+        fdum = 1.d0/mmat( (slave-1)*ndof+1 )
+		do k=1,nn
+          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
+          fdum = fdum + shapefunc(k)*shapefunc(k)/mmat( (iSS-1)*ndof+1 )
+        enddo
+        fstrSOLID%contacts(i)%states(j)%multiplier(1) = -1.d0/fdum * fstrSOLID%contacts(i)%states(j)%distance
+        lambda = fstrSOLID%contacts(i)%states(j)%multiplier(1)* fstrSOLID%contacts(i)%states(j)%direction
+        uc((slave-1)*ndof+1:(slave-1)*ndof+3) = lambda(:) / mmat( (slave-1)*ndof+1 )
+      enddo
+   enddo
+  end subroutine
 
 end module fstr_dynamic_nlexplicit

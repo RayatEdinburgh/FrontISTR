@@ -28,10 +28,10 @@ module mContactDef
     integer                       :: ctype                   !< 1:node-surface 2: surface-surface
     integer                       :: group                   !< group number
     character(len=HECMW_NAME_LEN) :: pair_name               !< name of contact pair
-    integer                       :: surf_id1, surf_id2      !< slave surafce, master surface
+    integer                       :: surf_id1, surf_id2      !< slave surface, master surface
     type(tSurfElement), pointer   :: master(:)=>null()       !< master surface (element )
     integer, pointer              :: slave(:)=>null()        !< slave surface (node)
-    real(kind=kreal)              :: fcoeff                  !< coeeficient of friction
+    real(kind=kreal)              :: fcoeff                  !< coefficient of friction
     real(kind=kreal)              :: tPenalty                !< tangential penalty
 
     ! following algorithm
@@ -39,7 +39,7 @@ module mContactDef
     ! 1: TIED-Just rigidly fixed the two surfaces
     ! 2: GLUED-Distance between the two surfaces to zero and glue them
     ! 3: SSLID-Small sliding contact( no position but with contact state change)
-    ! 4: FSLID-Finite sliding contact (both changes in contact state and poisition possible)
+    ! 4: FSLID-Finite sliding contact (both changes in contact state and position possible)
     integer                       :: algtype                 !< algorithm flag
 
     logical                       :: mpced                   !< if turns into mpc condition
@@ -268,21 +268,21 @@ contains
   end function
 
   !> This subroutine update contact states, which include
-  !!-# Free to contact ot contact to free state changes
+  !!-# Free to contact or contact to free state changes
   !!-# Clear lagrangian multipliers when free to contact
   subroutine scan_contact_state( flag_ctAlgo, contact, currpos, currdisp, ndforce, infoCTChange, &
       nodeID, elemID, active, mu, B )
     character(len=9), intent(in)                    :: flag_ctAlgo  !< contact analysis algorithm flag
-    type( tContact ), intent(inout)                  :: contact      !< contact info
-    type( fstr_info_contactChange ), intent(inout)   :: infoCTChange !< contact change info
-    real(kind=kreal), intent(in)                     :: currpos(:)    !< current coordinate of each nodes
-    real(kind=kreal), intent(in)                     :: currdisp(:)    !< current displacement of each nodes
-    real(kind=kreal), intent(in)                     :: ndforce(:)    !< nodal force
-    integer(kind=kint), intent(in)                  :: nodeID(:)     !< global nodal ID, just for print out
-    integer(kind=kint), intent(in)                  :: elemID(:)     !< global elemental ID, just for print out
-    logical, intent(out)                            :: active        !< if any in contact
-    real(kind=kreal), intent(in)                     :: mu            !< penalty
-    real(kind=kreal), optional                       :: B(:)          !< nodal force residual
+    type( tContact ), intent(inout)                 :: contact      !< contact info
+    type( fstr_info_contactChange ), intent(inout)  :: infoCTChange !< contact change info
+    real(kind=kreal), intent(in)                    :: currpos(:)   !< current coordinate of each nodes
+    real(kind=kreal), intent(in)                    :: currdisp(:)  !< current displacement of each nodes
+    real(kind=kreal), intent(in)                    :: ndforce(:)   !< nodal force
+    integer(kind=kint), intent(in)                  :: nodeID(:)    !< global nodal ID, just for print out
+    integer(kind=kint), intent(in)                  :: elemID(:)    !< global elemental ID, just for print out
+    logical, intent(out)                            :: active       !< if any in contact
+    real(kind=kreal), intent(in)                    :: mu           !< penalty
+    real(kind=kreal), optional                      :: B(:)         !< nodal force residual
 
     real(kind=kreal)    :: clearance
     integer(kind=kint)  :: slave, id, etype
@@ -949,5 +949,5 @@ contains
       contact%states(i)%tangentForce1(1:3) = contact%states(i)%tangentForce(1:3)
     enddo
   end subroutine update_contact_TangentForce
-
+  
 end module mContactDef

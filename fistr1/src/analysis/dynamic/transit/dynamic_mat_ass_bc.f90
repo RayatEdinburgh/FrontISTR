@@ -315,8 +315,8 @@ contains
           in = hecMESH%node_group%grp_item(ik)
 
           do idof = idofS, idofE
-            hecMAT%B        (NDOF*in-(NDOF-idof)) = RHS
-            fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof)) = 1.0d0
+            hecMAT%B(NDOF*in-(NDOF-idof)) = RHS*fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof))
+        !    fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof)) = 1.0d0
 
             !for output reaction force
             fstrSOLID%REACTION(NDOF*(in-1)+idof) = fstrSOLID%QFORCE(NDOF*(in-1)+idof)

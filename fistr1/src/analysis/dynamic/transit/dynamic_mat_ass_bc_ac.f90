@@ -259,8 +259,8 @@ contains
             RHS = 2.0*fstrDYNAMIC%DISP(NDOF*in-(NDOF-idof),1)    &
               -     fstrDYNAMIC%DISP(NDOF*in-(NDOF-idof),3)    &
               +  c1*RHS0
-            hecMAT%B        (NDOF*in-(NDOF-idof)) = RHS
-            fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof)) = 1.0d0
+            hecMAT%B(NDOF*in-(NDOF-idof)) = RHS* fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof))
+         !   fstrDYNAMIC%VEC1(NDOF*in-(NDOF-idof)) = 1.0d0
 
             !for output reaction force
             fstrSOLID%REACTION(NDOF*(in-1)+idof) = fstrSOLID%QFORCE(NDOF*(in-1)+idof)
