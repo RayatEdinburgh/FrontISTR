@@ -396,6 +396,12 @@ contains
         fstrSOLID%contacts(i)%states(j)%multiplier(1) = -1.d0/fdum * fstrSOLID%contacts(i)%states(j)%distance
         lambda = fstrSOLID%contacts(i)%states(j)%multiplier(1)* fstrSOLID%contacts(i)%states(j)%direction
         uc((slave-1)*ndof+1:(slave-1)*ndof+3) = lambda(:) / mmat( (slave-1)*ndof+1 )
+!		print *, uc((slave-1)*ndof+1:(slave-1)*ndof+3)
+        do k=1,nn
+          iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
+          uc((iSS-1)*ndof+1:(iSS-1)*ndof+3) = -lambda(:)*shapefunc(k)/mmat( (iSS-1)*ndof+1 )
+!		  print *, uc((iSS-1)*ndof+1:(iSS-1)*ndof+3)
+        enddo
       enddo
    enddo
   end subroutine
