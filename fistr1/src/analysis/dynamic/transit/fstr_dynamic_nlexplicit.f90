@@ -300,7 +300,7 @@ contains
       enddo
 	  if( associated( fstrSOLID%contacts ) )  then
 	    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
-        call FILM(1,ndof,fstrDYNAMIC%VEC1,fstrSOLID,fstrSOLID%ddunode)
+        call FILM(1,ndof,fstrDYNAMIC%VEC1,fstrSOLID,fstrDYNAMIC%DISP(:,2),fstrSOLID%ddunode)
         do j = 1 ,ndof*nnod
           hecMAT%X(j)  = hecMAT%X(j) - fstrSOLID%ddunode(j)
         enddo
@@ -364,17 +364,20 @@ contains
   end subroutine fstr_solve_dynamic_nlexplicit
   
   !< This subroutine implements Forward increment Lagrange multiplier method( NJ Carpenter et al. Int.J.Num.Meth.Eng.,32(1991),103-128 )
-  subroutine FILM(cstep,ndof,mmat,fstrSOLID,uc)
+  subroutine FILM(cstep,ndof,mmat,fstrSOLID,wkarray,uc)
     integer, intent(in)            :: cstep
     integer, intent(in)            :: ndof
     real(kind=kreal), intent(in)   :: mmat(:)
 	type(fstr_solid), intent(in)   :: fstrSOLID
+    real(kind=kreal), intent(out)  :: wkarray(:)
     real(kind=kreal), intent(out)  :: uc(:)
 	
-    integer :: i, j, k, grpid, slave, nn, iSS, sid, etype
+    integer :: i, j, k, m, grpid, slave, nn, iSS, sid, etype
+	integer(kind=16) :: i16
     real(kind=kreal) :: fdum, shapefunc(l_max_surface_node), lambda(3)
 
-    uc = 0.d0	
+    uc = 0.d0
+    wkarray = 0.d0
     do i=1,size(fstrSOLID%contacts)
     !  grpid = fstrSOLID%contacts(i)%group
     !  if( .not. fstr_isContactActive( fstrSOLID, grpid, cstep ) ) then
@@ -395,14 +398,21 @@ contains
         enddo
         fstrSOLID%contacts(i)%states(j)%multiplier(1) = -1.d0/fdum * fstrSOLID%contacts(i)%states(j)%distance
         lambda = fstrSOLID%contacts(i)%states(j)%multiplier(1)* fstrSOLID%contacts(i)%states(j)%direction
-        uc((slave-1)*ndof+1:(slave-1)*ndof+3) = lambda(:) / mmat( (slave-1)*ndof+1 )
-!		print *, uc((slave-1)*ndof+1:(slave-1)*ndof+3)
+        wkarray((slave-1)*ndof+1:(slave-1)*ndof+3) = lambda(:)
         do k=1,nn
           iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
-          uc((iSS-1)*ndof+1:(iSS-1)*ndof+3) = -lambda(:)*shapefunc(k)/mmat( (iSS-1)*ndof+1 )
-!		  print *, uc((iSS-1)*ndof+1:(iSS-1)*ndof+3)
+          wkarray((iSS-1)*ndof+1:(iSS-1)*ndof+3) = wkarray((iSS-1)*ndof+1:(iSS-1)*ndof+3) -lambda(:)*shapefunc(k)
         enddo
       enddo
+   enddo
+   
+   do i=1,size(wkarray)
+     uc(i) = wkarray(i)/mmat(i)
+     i16 = nint( uc(i)*1.d10 )
+     uc(i) = i16/1.d10
+	! if( dabs(uc(i))>1.d-10 ) then
+	!   print *,i,uc(i); pause
+    ! endif
    enddo
   end subroutine
 
