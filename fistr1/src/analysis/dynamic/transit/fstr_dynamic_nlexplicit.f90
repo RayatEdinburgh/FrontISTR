@@ -57,6 +57,7 @@ contains
     integer(kind=kint) :: ierror
     integer(kind=kint) :: iiii5, iexit
     integer(kind=kint) :: revocap_flag
+    integer(kind=16) :: i16
     real(kind=kreal), allocatable :: prevB(:)
 
     real(kind=kreal) :: a1, a2, a3, b1, b2, b3
@@ -302,7 +303,9 @@ contains
 	!    call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
         call FILM(1,ndof,fstrDYNAMIC%VEC1,hecMESH,fstrSOLID,infoCTChange,fstrDYNAMIC%DISP(:,2),fstrSOLID%ddunode)
         do j = 1 ,ndof*nnod
-          hecMAT%X(j)  = hecMAT%X(j) - fstrSOLID%ddunode(j)
+          hecMAT%X(j)  = hecMAT%X(j) + fstrSOLID%ddunode(j)
+     !     i16 = nint( hecMAT%X(j)*1.d10 )
+     !     hecMAT%X(j) = i16/1.d10
         enddo
       endif
       !C
@@ -317,7 +320,7 @@ contains
         fstrSOLID%dunode(j)  = hecMAT%X(j)-fstrDYNAMIC%DISP(j,1)
 
         fstrDYNAMIC%DISP(j,3) = fstrDYNAMIC%DISP(j,1)
-        fstrDYNAMIC%DISP(j,1) = hecMAT%X(j)
+        fstrDYNAMIC%DISP(j,1) = ( hecMAT%X(j) ) 
 
         hecMAT%X(j)  = fstrSOLID%dunode(j)
       end do
@@ -329,7 +332,7 @@ contains
         fstrSOLID%unode(j)  = fstrSOLID%unode(j) + fstrSOLID%dunode(j)
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
-
+print *, fstrSOLID%QFORCE(58), fstrSOLID%QFORCE(433), fstrDYNAMIC%DISP(58,1), fstrDYNAMIC%DISP(433,1)
       if( fstrDYNAMIC%restart_nout > 0 .and. &
           (mod(i,fstrDYNAMIC%restart_nout).eq.0 .or. i.eq.fstrDYNAMIC%n_step) ) then
         call fstr_write_restart_dyna_nl(i,hecMESH,fstrSOLID,fstrDYNAMIC,fstrPARAM)
@@ -466,11 +469,11 @@ contains
    
    do i=1,hecMESH%n_node*ndof
        uc(i) = wkarray(i)/mmat(i)
-       i16 = nint( uc(i)*1.d10 )
-       uc(i) = i16/1.d10
-	!   if( dabs(uc(i))>1.d-10 ) then
-	!     print *,i,uc(i)
-    !   endif
+    !   i16 = nint( uc(i)*1.d10 )
+     !  uc(i) = i16/1.d10
+	 !  if( dabs(uc(i))>1.d-10 ) then
+	 !    print *,i,uc(i)
+     !  endif
    enddo
    
   end subroutine
