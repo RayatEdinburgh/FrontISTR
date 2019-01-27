@@ -106,7 +106,7 @@ contains
           call hecmw_abort( hecmw_comm_get_comm())
         end if
 		
-		iunit = iunitS + fstrDYNAMIC%dynamic_IW7+20
+		iunit = iunitS + fstrDYNAMIC%dynamic_IW7
         write(fname,'(a,i0,a)') trim(header)//'dyna_force_',ing,'.txt'
         if(fstrDYNAMIC%restart_nout < 0 ) then
           open(iunit,file=fname, position = 'append', iostat=ierror)

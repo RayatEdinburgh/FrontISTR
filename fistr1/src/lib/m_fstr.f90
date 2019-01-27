@@ -525,6 +525,7 @@ module m_fstr
     integer(kind=kint) :: dynamic_IW7        =   207
     integer(kind=kint) :: dynamic_IW8        =   208
     integer(kind=kint) :: dynamic_IW9        =   209
+	integer(kind=kint) :: dynamic_IW10       =   210
   end type fstr_dynamic
 
   type fstr_freqanalysis
