@@ -105,6 +105,18 @@ contains
           write(*,*) 'stop due to file opening error',trim(fname)
           call hecmw_abort( hecmw_comm_get_comm())
         end if
+		
+		iunit = iunitS + fstrDYNAMIC%dynamic_IW7+20
+        write(fname,'(a,i0,a)') trim(header)//'dyna_force_',ing,'.txt'
+        if(fstrDYNAMIC%restart_nout < 0 ) then
+          open(iunit,file=fname, position = 'append', iostat=ierror)
+        else
+          open(iunit,file=fname, status = 'replace', iostat=ierror)
+        endif
+        if( ierror /= 0 ) then
+          write(*,*) 'stop due to file opening error',trim(fname)
+          call hecmw_abort( hecmw_comm_get_comm())
+        end if
 
         iunit = iunitS + fstrDYNAMIC%dynamic_IW8
         write(fname,'(a,i0,a)') trim(header)//'dyna_strain_',ing,'.txt'
@@ -243,6 +255,7 @@ contains
         close(iunitS + fstrDYNAMIC%dynamic_IW4)
         close(iunitS + fstrDYNAMIC%dynamic_IW5)
         close(iunitS + fstrDYNAMIC%dynamic_IW6)
+		close(iunitS + fstrDYNAMIC%dynamic_IW7)
         close(iunitS + fstrDYNAMIC%dynamic_IW8)
         close(iunitS + fstrDYNAMIC%dynamic_IW9)
       enddo

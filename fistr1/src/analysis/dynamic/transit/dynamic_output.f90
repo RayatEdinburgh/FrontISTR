@@ -403,6 +403,13 @@ contains
           fstrDYNAMIC%i_step, fstrDYNAMIC%t_curr, jj, &
           fstrDYNAMIC%ACC( hecMESH%n_dof*(ii-1)+1 : hecMESH%n_dof*ii , idx )
       end if
+	  !C-- nodal force
+      if( fstrDYNAMIC%iout_list(4)==1 ) then
+        iunit = iunitS + fstrDYNAMIC%dynamic_IW7+20
+        write( iunit, '(i10,1pe13.4e3,i10,1p6e13.4e3)' ) &
+          fstrDYNAMIC%i_step, fstrDYNAMIC%t_curr, jj, &
+          fstrSOLID%QFORCE( hecMESH%n_dof*(ii-1)+1 : hecMESH%n_dof*ii )
+      end if
 
       !C-- strain
       if( fstrDYNAMIC%iout_list(5) > 0 ) then

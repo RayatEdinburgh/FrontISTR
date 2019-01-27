@@ -57,7 +57,6 @@ contains
     integer(kind=kint) :: ierror
     integer(kind=kint) :: iiii5, iexit
     integer(kind=kint) :: revocap_flag
-    integer(kind=16) :: i16
     real(kind=kreal), allocatable :: prevB(:)
 
     real(kind=kreal) :: a1, a2, a3, b1, b2, b3
@@ -304,8 +303,6 @@ contains
         call FILM(1,ndof,fstrDYNAMIC%VEC1,hecMESH,fstrSOLID,infoCTChange,fstrDYNAMIC%DISP(:,2),fstrSOLID%ddunode)
         do j = 1 ,ndof*nnod
           hecMAT%X(j)  = hecMAT%X(j) + fstrSOLID%ddunode(j)
-     !     i16 = nint( hecMAT%X(j)*1.d10 )
-     !     hecMAT%X(j) = i16/1.d10
         enddo
       endif
       !C
@@ -332,7 +329,6 @@ contains
         fstrSOLID%unode(j)  = fstrSOLID%unode(j) + fstrSOLID%dunode(j)
       end do
       call fstr_UpdateState( hecMESH, fstrSOLID, fstrDYNAMIC%t_delta )
-print *, fstrSOLID%QFORCE(58), fstrSOLID%QFORCE(433), fstrDYNAMIC%DISP(58,1), fstrDYNAMIC%DISP(433,1)
       if( fstrDYNAMIC%restart_nout > 0 .and. &
           (mod(i,fstrDYNAMIC%restart_nout).eq.0 .or. i.eq.fstrDYNAMIC%n_step) ) then
         call fstr_write_restart_dyna_nl(i,hecMESH,fstrSOLID,fstrDYNAMIC,fstrPARAM)
@@ -392,6 +388,9 @@ print *, fstrSOLID%QFORCE(58), fstrSOLID%QFORCE(433), fstrDYNAMIC%DISP(58,1), fs
       do i=1,size(fstrSOLID%contacts)
           do j= 1, size(fstrSOLID%contacts(i)%slave)
             if( fstrSOLID%contacts(i)%states(j)%state == CONTACTFREE ) cycle
+			if( fstrSOLID%contacts(i)%states(j)%distance>epsilon(1.d0) ) then
+              fstrSOLID%contacts(i)%states(j)%state = CONTACTFREE; cycle
+            endif
             if( iter==0 ) then
               fstrSOLID%contacts(i)%states(j)%multiplier(1) =0.d0
               fstrSOLID%contacts(i)%states(j)%wkdist =0.d0
@@ -403,13 +402,9 @@ print *, fstrSOLID%QFORCE(58), fstrSOLID%QFORCE(433), fstrDYNAMIC%DISP(58,1), fs
 		    nn = size( fstrSOLID%contacts(i)%master(sid)%nodes )
             etype = fstrSOLID%contacts(i)%master(sid)%etype
             call getShapeFunc( etype, fstrSOLID%contacts(i)%states(j)%lpos(:), shapefunc )
-        !    lambda = fstrSOLID%contacts(i)%states(j)%multiplier(1)* fstrSOLID%contacts(i)%states(j)%direction
-        !    wkarray( (slave-1)*ndof+1:(slave-1)*ndof+3) = -lambda
             wkarray( slave ) = -fstrSOLID%contacts(i)%states(j)%multiplier(1)
 		    do k=1,nn
               iSS = fstrSOLID%contacts(i)%master(sid)%nodes(k)
-          !    wkarray((iSS-1)*ndof+1:(iSS-1)*ndof+3) = wkarray((iSS-1)*ndof+1:(iSS-1)*ndof+3) 
-	      !         + shapefunc(k) * lambda
               wkarray( iSS ) = wkarray( iSS ) + shapefunc(k) * fstrSOLID%contacts(i)%states(j)%multiplier(1)
             enddo
           enddo
@@ -464,16 +459,12 @@ print *, fstrSOLID%QFORCE(58), fstrSOLID%QFORCE(433), fstrDYNAMIC%DISP(58,1), fs
 
      if( dsqrt(conv)<1.d-6 ) exit
      iter = iter+1
-   !  call fstr_scan_contact_state_exp( cstep, hecMESH, fstrSOLID, infoCTChange ); pause
    enddo
    
    do i=1,hecMESH%n_node*ndof
        uc(i) = wkarray(i)/mmat(i)
     !   i16 = nint( uc(i)*1.d10 )
      !  uc(i) = i16/1.d10
-	 !  if( dabs(uc(i))>1.d-10 ) then
-	 !    print *,i,uc(i)
-     !  endif
    enddo
    
   end subroutine
