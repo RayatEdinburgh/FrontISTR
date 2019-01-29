@@ -4,10 +4,10 @@
 ## 2019年 1月 14日 月曜日 15:01:05 JST
 ##
 !MESH, NAME=fstrMSH,TYPE=HECMW-ENTIRE
-2elem.msh
+rigidslide.msh
 !CONTROL,NAME=fstrCNT
-impact2elem.cnt
+rigidslide.cnt
 !RESULT,NAME=fstrRES,IO=OUT
-impact2elem.res
+rigidslide.res
 !RESULT,NAME=vis_out,IO=OUT
-impact2elem.vis
+rigidslide.vis

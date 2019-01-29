@@ -14,12 +14,13 @@ test
 !ELEMENT, TYPE=361, EGRP = P1
         1,        1,        2,        3,        4,        5,        6,        7,        8
 !ELEMENT, TYPE=301, EGRP=P2
+       10,   10, 20
 !SECTION, TYPE = SOLID, EGRP = P1, MATERIAL = M1
 !MATERIAL, NAME = M1, ITEM = 2
 !ITEM=1, SUBITEM=2
  4000.,      0.3
 !ITEM=2
- 1.E-9
+ 1.0
 !SECTION, TYPE = SOLID, EGRP = P2, MATERIAL = M2
 !MATERIAL, NAME = M2, ITEM = 2
 !ITEM=1, SUBITEM=2
