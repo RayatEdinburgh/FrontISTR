@@ -392,7 +392,7 @@ contains
               fstrSOLID%contacts(i)%states(j)%state = CONTACTFREE; cycle
             endif
             if( iter==0 ) then
-              fstrSOLID%contacts(i)%states(j)%multiplier(1) =0.d0
+              fstrSOLID%contacts(i)%states(j)%multiplier(:) =0.d0
               fstrSOLID%contacts(i)%states(j)%wkdist =0.d0
               cycle
             endif
@@ -448,6 +448,14 @@ contains
          dlambda= (fstrSOLID%contacts(i)%states(j)%distance-fstrSOLID%contacts(i)%states(j)%wkdist) /fdum
          conv = conv + dlambda*dlambda; 
          fstrSOLID%contacts(i)%states(j)%multiplier(1) = fstrSOLID%contacts(i)%states(j)%multiplier(1) + dlambda
+         if( fstrSOLID%contacts(i)%fcoeff>0.d0 ) then
+           if( fstrSOLID%contacts(i)%states(j)%state == CONTACTSLIP ) then
+             fstrSOLID%contacts(i)%states(j)%multiplier(2) =             & 
+                fstrSOLID%contacts(i)%fcoeff * fstrSOLID%contacts(i)%states(j)%multiplier(1)
+           else    ! stick
+       !      fstrSOLID%contacts(i)%states(j)%multiplier(2) = 
+           endif
+         endif
          lambda = fstrSOLID%contacts(i)%states(j)%multiplier(1)* fstrSOLID%contacts(i)%states(j)%direction
          wkarray((slave-1)*ndof+1:(slave-1)*ndof+3) = lambda(:)
          do k=1,nn

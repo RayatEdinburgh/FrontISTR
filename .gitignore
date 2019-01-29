@@ -45,3 +45,5 @@ examples/static/thermal/hecmw_ctrl.dat
 build/
 fistr/starter
 FrontISTRConfig.h
+/examples/dynamic/tworods
+/examples/dynamic/expcontact

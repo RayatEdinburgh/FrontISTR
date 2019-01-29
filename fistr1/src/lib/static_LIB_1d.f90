@@ -20,9 +20,9 @@ contains
     integer(kind=kint), intent(in)  :: nn                  !< number of elemental nodes
     real(kind=kreal),   intent(in)  :: ecoord(3,nn)        !< coordinates of elemental nodes
     real(kind=kreal),   intent(in)  :: area                !< section area
-    type(tGaussStatus), intent(in)  :: gausses(:)          !< status of qudrature points
+    type(tGaussStatus), intent(in)  :: gausses(:)          !< status of quadrature points
     real(kind=kreal),   intent(out) :: stiff(:,:)          !< stiff matrix
-    real(kind=kreal),   intent(in), optional :: u(:,:)     !< nodal displacemwent
+    real(kind=kreal),   intent(in), optional :: u(:,:)     !< nodal displacement
     real(kind=kreal),   intent(in), optional :: temperature(nn)     !< temperature
 
     real(kind=kreal) DET,WG, llen, llen0, elem(3,nn)
@@ -79,10 +79,10 @@ contains
     integer(kind=kint), intent(in)     :: nn              !< \param [in] number of elemental nodes
     real(kind=kreal),   intent(in)     :: ecoord(3,nn)    !< \param [in] coordinates of elemental nodes
     real(kind=kreal),   intent(in)     :: area            !< section area
-    real(kind=kreal),   intent(in)     :: u(3,nn)         !< \param [in] nodal dislplacements
-    real(kind=kreal),   intent(in)     :: du(3,nn)       !< \param [in] nodal displacement ( solutions of solver )
+    real(kind=kreal),   intent(in)     :: u(3,nn)         !< \param [in] nodal displacements
+    real(kind=kreal),   intent(in)     :: du(3,nn)        !< \param [in] nodal displacement ( solutions of solver )
     real(kind=kreal),   intent(out)    :: qf(nn*3)        !< \param [out] Internal Force
-    type(tGaussStatus), intent(inout)  :: gausses(:)      !< \param [out] status of qudrature points
+    type(tGaussStatus), intent(inout)  :: gausses(:)      !< \param [out] status of quadrature points
     real(kind=kreal),   intent(in), optional :: TT(nn)    !< current temperature
     real(kind=kreal),   intent(in), optional :: T0(nn)    !< reference temperature
 
