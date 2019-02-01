@@ -464,8 +464,10 @@ contains
          enddo
        enddo
      enddo
-
-     if( dsqrt(conv)<1.d-6 ) exit
+#ifdef _DEBUG
+     print *, "--Contact iteration:", iter, conv
+#endif
+     if( dsqrt(conv)<1.d-8 ) exit
      iter = iter+1
    enddo
    
