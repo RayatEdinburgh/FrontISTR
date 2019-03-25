@@ -125,8 +125,8 @@ contains
       do j = 1 ,ndof*nnod
         fstrDYNAMIC%DISP(j,3) = fstrDYNAMIC%DISP(j,1) - fstrDYNAMIC%VEL (j,1)/(2.d0*a2) &
           + fstrDYNAMIC%ACC (j,1)/ (2.d0*a1)
-        fstrDYNAMIC%DISP(j,2) = fstrDYNAMIC%DISP(j,1) - fstrDYNAMIC%VEL (j,1)/ a2 &
-          + fstrDYNAMIC%ACC (j,1)/ (2.d0*a1) * 4.d0
+      !  fstrDYNAMIC%DISP(j,2) = fstrDYNAMIC%DISP(j,1) - fstrDYNAMIC%VEL (j,1)/ a2 &
+      !    + fstrDYNAMIC%ACC (j,1)/ (2.d0*a1) * 4.d0
       end do
 
       call fstr_dynamic_Output(hecMESH, fstrSOLID, fstrDYNAMIC, fstrPARAM)
@@ -135,7 +135,8 @@ contains
 
 	if( associated( fstrSOLID%contacts ) )  then
       call initialize_contact_output_vectors(fstrSOLID,hecMAT)
-	  call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+	!  call fstr_scan_contact_state( 1, fstrDYNAMIC%t_delta, kcaSLAGRANGE, hecMESH, fstrSOLID, infoCTChange )
+      call FILM(1,ndof,fstrDYNAMIC%VEC1,hecMESH,fstrSOLID,infoCTChange,fstrDYNAMIC%DISP(:,2),fstrSOLID%ddunode)
     endif
 
     do i= restrt_step_num, fstrDYNAMIC%n_step
