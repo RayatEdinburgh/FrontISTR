@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! Copyright (c) 2016 The University of Tokyo
+! Copyright (c) 2019 FrontISTR Commons
 ! This software is released under the MIT License, see LICENSE.txt
 !-------------------------------------------------------------------------------
 ! If new header is supported, change according to following method.    !
@@ -124,8 +124,7 @@ module m_fstr
   real(kind=kreal)   :: ETIME ! /=fstr_param%etime
   integer(kind=kint) :: ITMAX
   real(kind=kreal)   :: EPS   ! /=fstr_param%eps
-  real(kind=kreal)   :: TEMTOL
-  
+
   type tInitialCondition
      character(len=HECMW_FILENAME_LEN)          :: cond_name
      integer                    :: node_elem                    !< node =0;  element =1
@@ -191,29 +190,29 @@ module m_fstr
 
   !> Data for STATIC ANSLYSIS  (fstrSOLID)
   type fstr_solid_physic_val
-    real(kind=kreal), pointer :: STRESS(:)    !< nodal stress
-    real(kind=kreal), pointer :: STRAIN(:)    !< nodal strain
-    real(kind=kreal), pointer :: MISES(:)    !< nodal MISES
+    real(kind=kreal), pointer :: STRESS(:) => null()   !< nodal stress
+    real(kind=kreal), pointer :: STRAIN(:) => null()   !< nodal strain
+    real(kind=kreal), pointer :: MISES(:) => null()    !< nodal MISES
 
-    real(kind=kreal), pointer :: PSTRESS(:)   !< nodal principal stress
-    real(kind=kreal), pointer :: PSTRAIN(:)   !< nodal principal strain
-    real(kind=kreal), pointer :: PSTRESS_VECT(:,:)   !< nodal principal stress vector
-    real(kind=kreal), pointer :: PSTRAIN_VECT(:,:)   !< nodal principal strain vector
+    real(kind=kreal), pointer :: PSTRESS(:) => null()   !< nodal principal stress
+    real(kind=kreal), pointer :: PSTRAIN(:) => null()   !< nodal principal strain
+    real(kind=kreal), pointer :: PSTRESS_VECT(:,:) => null()  !< nodal principal stress vector
+    real(kind=kreal), pointer :: PSTRAIN_VECT(:,:) => null()  !< nodal principal strain vector
 
-    real(kind=kreal), pointer :: ESTRESS(:)   !< elemental stress
-    real(kind=kreal), pointer :: ESTRAIN(:)   !< elemental strain
-    real(kind=kreal), pointer :: EMISES(:)    !< elemental MISES
+    real(kind=kreal), pointer :: ESTRESS(:) => null()  !< elemental stress
+    real(kind=kreal), pointer :: ESTRAIN(:) => null()  !< elemental strain
+    real(kind=kreal), pointer :: EMISES(:) => null()   !< elemental MISES
 
-    real(kind=kreal), pointer :: EPSTRESS(:)   !< elemental principal stress
-    real(kind=kreal), pointer :: EPSTRAIN(:)   !< elemental principal strain
-    real(kind=kreal), pointer :: EPSTRESS_VECT(:,:)   !< elemental principal stress vector
-    real(kind=kreal), pointer :: EPSTRAIN_VECT(:,:)   !< elemental principal strain vector
-    real(kind=kreal), pointer :: ENQM(:)      !< elemental NQM
+    real(kind=kreal), pointer :: EPSTRESS(:) => null()  !< elemental principal stress
+    real(kind=kreal), pointer :: EPSTRAIN(:) => null()  !< elemental principal strain
+    real(kind=kreal), pointer :: EPSTRESS_VECT(:,:) => null()  !< elemental principal stress vector
+    real(kind=kreal), pointer :: EPSTRAIN_VECT(:,:) => null()  !< elemental principal strain vector
+    real(kind=kreal), pointer :: ENQM(:) => null()     !< elemental NQM
 
 
-    type(fstr_solid_physic_val), pointer :: LAYER(:)    !< Laminated Shell's layer (1,2,3,4,5,...)
-    type(fstr_solid_physic_val), pointer :: PLUS    !< for SHELL PLUS
-    type(fstr_solid_physic_val), pointer :: MINUS    !< for SHELL MINUS
+    type(fstr_solid_physic_val), pointer :: LAYER(:) => null()   !< Laminated Shell's layer (1,2,3,4,5,...)
+    type(fstr_solid_physic_val), pointer :: PLUS => null()   !< for SHELL PLUS
+    type(fstr_solid_physic_val), pointer :: MINUS => null()  !< for SHELL MINUS
   end type fstr_solid_physic_val
 
   type fstr_solid
@@ -326,7 +325,7 @@ module m_fstr
 
     real(kind=kreal), pointer :: CONT_NFORCE(:)  !< contact normal force for output
     real(kind=kreal), pointer :: CONT_FRIC(:)    !< contact friction force for output
-    real(kind=kreal), pointer :: CONT_RELVEL(:)  !< contact relative velocity for output
+    real(kind=kreal), pointer :: CONT_RELVEL(:)  !< contact ralative velocity for output
     real(kind=kreal), pointer :: CONT_STATE(:)   !< contact state for output
 
     type(fstr_solid_physic_val), pointer :: SOLID=>null()     !< for solid physical value stracture
@@ -387,29 +386,32 @@ module m_fstr
 
   !> Data for HEAT ANSLYSIS  (fstrHEAT)
   type fstr_heat
+    !> Crank-Nicolson parameter
+    integer(kind=kint) :: is_steady
+    real(kind=kreal)   :: beta
+    logical :: is_iter_max_limit
+
     !> TIME CONTROL
-    real(kind=kreal) :: TEMTOL
-    integer :: STEPtot
+    integer(kind=kint) :: STEPtot
     integer(kind=kint) :: restart_nout
-    real(kind=kreal), pointer :: STEP_DLTIME(:),STEP_EETIME(:)
-    real(kind=kreal), pointer :: STEP_DELMIN(:),STEP_DELMAX(:)
+    real(kind=kreal), pointer :: STEP_DLTIME(:), STEP_EETIME(:)
+    real(kind=kreal), pointer :: STEP_DELMIN(:), STEP_DELMAX(:)
 
     !> MATERIAL
-    integer :: MATERIALtot
+    integer(kind=kint) :: MATERIALtot
+    integer(kind=kint), pointer :: RHOtab(:), CPtab(:), CONDtab(:)
     real(kind=kreal), pointer :: RHO(:,:), RHOtemp (:,:)
     real(kind=kreal), pointer :: CP(:,:),  CPtemp (:,:)
     real(kind=kreal), pointer :: COND(:,:),CONDtemp (:,:)
-
-    integer, pointer :: RHOtab(:), CPtab(:), CONDtab(:)
 
     real(kind=kreal), pointer :: RHOfuncA(:,:),  RHOfuncB(:,:)
     real(kind=kreal), pointer :: CPfuncA (:,:),  CPfuncB(:,:)
     real(kind=kreal), pointer :: CONDfuncA (:,:),CONDfuncB(:,:)
 
     !> AMPLITUDE
-    integer :: AMPLITUDEtot
+    integer(kind=kint) :: AMPLITUDEtot
+    integer(kind=kint), pointer :: AMPLtab(:)
     real(kind=kreal), pointer :: AMPL(:,:), AMPLtime (:,:)
-    integer, pointer :: AMPLtab(:)
     real(kind=kreal), pointer :: AMPLfuncA(:,:),  AMPLfuncB(:,:)
 
     !> VALUE
@@ -418,45 +420,45 @@ module m_fstr
     real(kind=kreal), pointer :: TEMP (:)
 
     !> FIXTEMP
-    integer :: T_FIX_tot
-    integer, pointer          :: T_FIX_node(:)
-    integer, pointer          :: T_FIX_ampl(:)
+    integer(kind=kint) :: T_FIX_tot
+    integer(kind=kint), pointer :: T_FIX_node(:)
+    integer(kind=kint), pointer :: T_FIX_ampl(:)
     real(kind=kreal), pointer :: T_FIX_val(:)
 
     !> CFLUX
-    integer :: Q_NOD_tot
-    integer, pointer          :: Q_NOD_node(:)
-    integer, pointer          :: Q_NOD_ampl(:)
+    integer(kind=kint) :: Q_NOD_tot
+    integer(kind=kint), pointer :: Q_NOD_node(:)
+    integer(kind=kint), pointer :: Q_NOD_ampl(:)
     real(kind=kreal), pointer :: Q_NOD_val(:)
 
     !> DFLUX (not used)
-    integer :: Q_VOL_tot
-    integer, pointer          :: Q_VOL_elem(:)
-    integer, pointer          :: Q_VOL_ampl(:)
+    integer(kind=kint) :: Q_VOL_tot
+    integer(kind=kint), pointer :: Q_VOL_elem(:)
+    integer(kind=kint), pointer :: Q_VOL_ampl(:)
     real(kind=kreal), pointer :: Q_VOL_val(:)
 
     !> DFLUX, !SFLUX
-    integer :: Q_SUF_tot
-    integer, pointer          :: Q_SUF_elem(:)
-    integer, pointer          :: Q_SUF_ampl(:)
-    integer, pointer          :: Q_SUF_surf(:)
+    integer(kind=kint) :: Q_SUF_tot
+    integer(kind=kint), pointer :: Q_SUF_elem(:)
+    integer(kind=kint), pointer :: Q_SUF_ampl(:)
+    integer(kind=kint), pointer :: Q_SUF_surf(:)
     real(kind=kreal), pointer :: Q_SUF_val(:)
 
     !> RADIATE, !SRADIATE
-    integer :: R_SUF_tot
-    integer, pointer          :: R_SUF_elem(:)
-    integer, pointer          :: R_SUF_ampl(:,:)
-    integer, pointer          :: R_SUF_surf(:)
+    integer(kind=kint) :: R_SUF_tot
+    integer(kind=kint), pointer :: R_SUF_elem(:)
+    integer(kind=kint), pointer :: R_SUF_ampl(:,:)
+    integer(kind=kint), pointer :: R_SUF_surf(:)
     real(kind=kreal), pointer :: R_SUF_val(:,:)
 
     !> FILM, SFILM
-    integer :: H_SUF_tot
-    integer, pointer          :: H_SUF_elem(:)
-    integer, pointer          :: H_SUF_ampl(:,:)
-    integer, pointer          :: H_SUF_surf(:)
+    integer(kind=kint) :: H_SUF_tot
+    integer(kind=kint), pointer :: H_SUF_elem(:)
+    integer(kind=kint), pointer :: H_SUF_ampl(:,:)
+    integer(kind=kint), pointer :: H_SUF_surf(:)
     real(kind=kreal), pointer :: H_SUF_val(:,:)
 
-    integer  :: WL_tot
+    integer(kind=kint)  :: WL_tot
     type(tWeldLine), pointer :: weldline(:) => null()
   end type fstr_heat
 
@@ -525,7 +527,7 @@ module m_fstr
     integer(kind=kint) :: dynamic_IW7        =   207
     integer(kind=kint) :: dynamic_IW8        =   208
     integer(kind=kint) :: dynamic_IW9        =   209
-	integer(kind=kint) :: dynamic_IW10       =   210
+    integer(kind=kint) :: dynamic_IW10       =   210
   end type fstr_dynamic
 
   type fstr_freqanalysis
@@ -657,10 +659,18 @@ contains
     nullify( S%STRESS )
     nullify( S%STRAIN )
     nullify( S%MISES )
+    nullify( S%PSTRESS )
+    nullify( S%PSTRAIN )
+    nullify( S%PSTRESS_VECT )
+    nullify( S%PSTRAIN_VECT )
     nullify( S%REACTION )
     nullify( S%ESTRESS )
     nullify( S%ESTRAIN )
     nullify( S%EMISES )
+    nullify( S%EPSTRESS )
+    nullify( S%EPSTRAIN )
+    nullify( S%EPSTRESS_VECT )
+    nullify( S%EPSTRAIN_VECT )
     nullify( S%ENQM )
     nullify( S%GL          )
     nullify( S%QFORCE      )
@@ -1034,7 +1044,7 @@ contains
     implicit none
     type(hecmwST_local_mesh), intent(inout) :: hecMESH
     type (fstr_solid), intent(in) :: fstrSOLID
-    real(kind=kreal), pointer :: coord(:)
+    real(kind=kreal), intent(out) :: coord(:)
     integer(kind=kint) :: i
     if(hecMESH%n_dof == 4) return
     do i = 1, hecMESH%n_node*min(hecMESH%n_dof,3)
@@ -1047,7 +1057,7 @@ contains
     implicit none
     type(hecmwST_local_mesh), intent(inout) :: hecMESH
     type (fstr_solid), intent(in) :: fstrSOLID
-    real(kind=kreal), pointer :: coord(:)
+    real(kind=kreal), intent(in) :: coord(:)
     integer(kind=kint) :: i
     if(hecMESH%n_dof == 4) return
     do i = 1, hecMESH%n_node*min(hecMESH%n_dof,3)

@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2016 FrontISTR Forum, The University of Tokyo
+# Copyright (c) 2019 FrontISTR Commons
 # This software is released under the MIT License, see License.txt
 ###############################################################################
 
@@ -56,7 +56,7 @@ if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
   # Enable debug options
   find_package(Backtrace)
   if(Backtrace_FOUND)
-    list(APPEND FrontISTR_LIBRARIES ${Backtrace_LIBRARY}) 
+    list(APPEND FrontISTR_LIBRARIES ${Backtrace_LIBRARY})
     list(APPEND FrontISTR_INCLUDE_DIR ${Backtrace_INCLUDE_DIR})
     set(CMAKE_VERBOSE_MAKEFILE ON)
     # GNU Compiler
@@ -125,7 +125,8 @@ endif()
 # -DWITH_MUMPS       : compile with MUMPS direct solver
 # -DWITH_LAPACK      : compile with LAPACK
 # -DWITH_ML          : compile with Trilinos multigrid preconditioning package
-# -DWITH_DOC        : generate API documents
+# -DWITH_DOC         : generate API documents
+# -DOLD_RES_FORMAT   : use old style result file( comment and global output disabled)
 
 ###################
 # Find external packages
@@ -139,7 +140,6 @@ find_package(Parmetis)
 find_package(Refiner)
 find_package(Revocap)
 find_package(Scalapack)
-find_package(lapack)
 find_package(Trilinos)
 find_package(Doxygen)
 option(WITH_TOOLS "compile tools" ON)
@@ -157,13 +157,13 @@ option(PARMETIS_VER_3 "uses METIS-3" OFF)
 option(WITH_REFINER "compile with REVOCAP_Refiner" ${REFINER_FOUND})
 option(WITH_REVOCAP "compile with REVOCAP_Coupler" ${REVOCAP_FOUND})
 option(WITH_ML "compile with Trilinos ML" ${Trilinos_FOUND})
+option(OLD_RES_FORMAT "use old style result file" ${OLD_RES_FORMAT})
 option(DEBUG_EXTRA "enable memory leak check (only for gcc4.9 <)" OFF)
 feature_summary(WHAT ALL)
 
 ###################
 # -DWITH_MPI
 ###################
-set(WITH_MPI OFF)
 if(WITH_MPI AND MPI_Fortran_FOUND AND MPI_CXX_FOUND AND MPI_C_FOUND)
   list(APPEND FrontISTR_INCLUDE_DIRS
     ${MPI_C_INCLUDE_PATH}
@@ -188,7 +188,7 @@ mark_as_advanced(MPI_EXTRA_LIBRARY MPI_LIBRARY)
 if(WITH_OPENMP AND OPENMP_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
 else()
   set(WITH_OPENMP OFF)
@@ -218,19 +218,17 @@ endif()
 ###################
 # -DWITH_ML
 ###################
-set(WITH_ML OFF)
 if(WITH_ML)
   if(Trilinos_FOUND)
     list(APPEND FrontISTR_INCLUDE_DIRS ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
     list(APPEND FrontISTR_DEFINITIONS "HECMW_WITH_ML")
     list(APPEND FrontISTR_LIBRARIES ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-	mark_as_advanced(Trilinos_DIR)
   else()
     message(WARNING "Trilinos not found")
     set(WITH_ML OFF)
   endif()
 endif()
-set(WITH_ML OFF)
+mark_as_advanced(Trilinos_DIR)
 
 ###################
 # -DWITH_PARMETIS
@@ -247,15 +245,11 @@ endif()
 # -DWITH_MUMPS
 ###################
 if(WITH_MUMPS)
-  if(MUMPS_FOUND AND LAPACK_FOUND )
+  if(MUMPS_FOUND AND ( (SCALAPACK_FOUND AND LAPACK_FOUND) OR SCALAPACK_MKL ) )
     list(APPEND FrontISTR_DEFINITIONS "HECMW_WITH_MUMPS")
     list(APPEND FrontISTR_INCLUDE_DIRS ${MUMPS_INCLUDE_PATH})
-	if( WITH_MPI AND ( SCALAPACK_FOUND OR SCALAPACK_MKL ) )
-      list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES})
-      mark_as_advanced(scalapack_DIR)
-    else()
-	  list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${LAPACK_LIBRARIES})
-    endif()
+    list(APPEND FrontISTR_LIBRARIES ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES})
+    mark_as_advanced(scalapack_DIR)
   else()
     message(FATAL_ERROR "MUMPS could not enable. Please also install scalapack and lapack.")
     set(WITH_MUMPS OFF)
@@ -263,7 +257,6 @@ if(WITH_MUMPS)
 else()
   set(WITH_MUMPS OFF)
 endif()
-set(WITH_MUMPS OFF)
 
 ###################
 # -DWITH_METIS
@@ -305,6 +298,13 @@ if(WITH_MKL)
   set(WITH_LAPACK ON)
 else()
   set(WITH_MKL OFF)
+endif()
+
+###################
+# -DOLD_RES_FORMAT
+###################
+if(OLD_RES_FORMAT)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DOLD_RES_FORMAT")
 endif()
 
 #############################################

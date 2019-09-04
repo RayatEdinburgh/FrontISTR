@@ -1,10 +1,73 @@
 !-------------------------------------------------------------------------------
-! Copyright (c) 2016 The University of Tokyo
+! Copyright (c) 2019 FrontISTR Commons
 ! This software is released under the MIT License, see LICENSE.txt
 !-------------------------------------------------------------------------------
 !> This module provides functions to initialize heat analysis
 module m_heat_init
 contains
+
+  subroutine heat_init(hecMESH, fstrHEAT)
+    use m_fstr
+    implicit none
+    type(fstr_heat) :: fstrHEAT
+    type(hecmwST_local_mesh) :: hecMESH
+    integer(kind=kint) :: i, j
+
+    allocate(fstrHEAT%TEMP0(hecMESH%n_node))
+    allocate(fstrHEAT%TEMPC(hecMESH%n_node))
+    allocate(fstrHEAT%TEMP (hecMESH%n_node))
+    fstrHEAT%TEMP0 = 0.0d0
+    fstrHEAT%TEMPC = 0.0d0
+    fstrHEAT%TEMP  = 0.0d0
+
+    if(hecMESH%hecmw_flag_initcon == 1)then
+      do i = 1, hecMESH%n_node
+        j = hecMESH%node_init_val_index(i)
+        fstrHEAT%TEMP0(i) = hecMESH%node_init_val_item(j)
+        fstrHEAT%TEMPC(i) = fstrHEAT%TEMP0(i)
+        fstrHEAT%TEMP (i) = fstrHEAT%TEMP0(i)
+      enddo
+      write(ILOG,*) ' Initial condition of temperatures: OK'
+    endif
+    if( associated(g_InitialCnd) ) then
+        do j=1,size(g_InitialCnd)
+          if( g_InitialCnd(j)%cond_name=="temperature" ) then
+            do i= 1, hecMESH%n_node
+              fstrHEAT%TEMP0(i)= g_InitialCnd(j)%realval(i)
+              fstrHEAT%TEMPC(i)= fstrHEAT%TEMP0(i)
+              fstrHEAT%TEMP (i)= fstrHEAT%TEMP0(i)
+            enddo
+            exit
+          endif
+        enddo
+        write(ILOG,*) ' Initial condition of temperatures: OK'
+    endif
+  end subroutine heat_init
+
+  subroutine heat_init_log(hecMESH)
+    use m_fstr
+    implicit none
+    type(hecmwST_local_mesh) :: hecMESH
+
+    if(hecMESH%my_rank == 0)then
+      write(IMSG,*) '============================='
+      write(IMSG,*) '  H E A T   T R A N S F E R  '
+      write(IMSG,*) '============================='
+      write(ISTA,*)
+      write(ISTA,*)'  ISTEP    INCR    ITER     RESIDUAL     IITER   '
+      write(ISTA,*)'-------------------------------------------------'
+    endif
+  end subroutine heat_init_log
+
+  subroutine heat_finalize(fstrHEAT)
+    use m_fstr
+    implicit none
+    type(fstr_heat) :: fstrHEAT
+    deallocate(fstrHEAT%TEMP0)
+    deallocate(fstrHEAT%TEMPC)
+    deallocate(fstrHEAT%TEMP )
+  end subroutine heat_finalize
+
   !C***
   !C*** INIT_AMPLITUDE
   !C***
